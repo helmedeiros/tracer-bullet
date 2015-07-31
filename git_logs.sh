@@ -5,5 +5,5 @@ function story_files() {
 }
 
 function story_commits(){
-  git log --pretty=format:"%C(yellow)%ad%Creset %C(green)%an%Creset %s %C(yellow)%h%Creset" --date=short --grep= "$1" | sort -u
+  git log --pretty=format:"%C(yellow)%ad%Creset %C(green)%an%Creset %s %C(yellow)%h%Creset" --date=short --grep="$1" | sort -u
 }
