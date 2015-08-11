@@ -12,7 +12,7 @@ function handle_options(){
   while [ $# -gt 0 ]; do
     arg=$1;
     case $arg in
-      "story:commits" ) cmd_story_commits $@;
+      "story:commits" ) story_commits $@;
       break;;
       "--version" ) version;
       break;;
