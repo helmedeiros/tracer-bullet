@@ -1,6 +1,7 @@
 #!/bin/sh
 #
 source $(dirname $0)/help.sh
+source $(dirname $0)/version.sh
 
 function handle_options(){
   # The user didn't specify a command; give them help
@@ -10,6 +11,8 @@ function handle_options(){
   while [ $# -gt 0 ]; do
     arg=$1;
     case $arg in
+      "--version" ) version;
+      break;;
       "--help" | *) list_commands;
       break;;
     esac
