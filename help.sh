@@ -12,4 +12,5 @@ function list_commands(){
 function list_common_cmds_help(){
   echo "The most commonly used `basename $0` commands are";
   echo "    story:commits  -- list all commits for a story #";
+  echo "    story:files  -- list all files modified for a story #";
 }

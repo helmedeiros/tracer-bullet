@@ -12,11 +12,13 @@ function handle_options(){
   while [ $# -gt 0 ]; do
     arg=$1;
     case $arg in
+      "story:files"		) story_files $2;
+      break;;
       "story:commits" ) story_commits $@;
       break;;
-      "--version" ) version;
+      "--version"     ) version;
       break;;
-      "--help" | * ) list_commands;
+      "--help" | *    ) list_commands;
       break;;
     esac
   done
