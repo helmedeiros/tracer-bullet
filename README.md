@@ -47,6 +47,6 @@ source ~/.zshrc
 Open a new terminal and type the following line:
 
 ```
-pem --help
+pem  --help
 ```
 >>>>>>> b63a494... Adding order
