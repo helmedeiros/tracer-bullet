@@ -16,6 +16,10 @@ function handle_options(){
       break;;
       "story:commits" ) story_commits $@;
       break;;
+      "story:diary"   ) story_diary $2;
+      break;;
+      "story:diff"   ) story_diff $2;
+      break;;
       "--version"     ) version;
       break;;
       "--help" | *    ) list_commands;
