@@ -12,6 +12,10 @@ function handle_options(){
   while [ $# -gt 0 ]; do
     arg=$1;
     case $arg in
+      "configure" ) configure_zsh_autocomplete $@;
+      break;;
+      "configure:jira" ) configure_jira $@;
+      break;;
       "story:files"		) story_files $2;
       break;;
       "story:commits" ) story_commits $@;
