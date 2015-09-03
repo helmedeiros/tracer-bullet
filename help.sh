@@ -11,7 +11,7 @@ function list_commands(){
 
 function list_common_cmds_help(){
   echo "The most commonly used `basename $0` commands are";
-  echo "    configure [--autocomplete, --jira]  -- optional configurations";
+  echo "    configure [--autocomplete, --jira, --project]  -- optional configurations";
   echo "    commit -- easy commit for configured projects";
   echo "    pair [--with, --story]  -- Configure pairing informations";
   echo "    story:commits  -- list all commits for a story #";

@@ -29,6 +29,7 @@ case "$words[1]" in
     _command_args=(
       '(-a|--autocomplete)'{-a,--autocomplete}'[configure autocomplete]' \
       '(-j|--jira)'{-j,--jira}'[configure jira credentials]' \
+      '(-p|--project)'{-p,--project}'[configure project]' \
     )
     ;;
   pair)

@@ -2,17 +2,23 @@
 #
 # "configure" builtin command.
 function configure_options() {
-  case "$1" in
+  case "$2" in
 
      -a|--autocomplete)
        configure_zsh_autocomplete $@
        break;
      ;;
 
-     -j|--jira|*)
+     -j|--jira)
        configure_jira $@
        break;
      ;;
+
+     -p|--project|*)
+       configure_project $3
+       break;
+     ;;
+
    esac
 }
 
@@ -46,4 +52,9 @@ function write_base64_jira_key() {
 USER_JIRA_KEY=\""$1"\";
 "  > $BASEDIR/config/user_data.sh
 
+}
+
+function configure_project() {
+  run_cmd "git config --global current.project $1"
+  define_project
 }
