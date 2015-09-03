@@ -4,7 +4,8 @@
 function commit() {
   TEAM=$PROJECT_PREFIX
   STORY=$(git config --global $PROJECT_PREFIX.current.story)
-  PAIR=$(git config --global $PROJECT_PREFIX.current.pair)
+  MY_USER=$(git config --global $PROJECT_PREFIX.user)
+  PAIR_USER=$(git config --global $PROJECT_PREFIX.current.pair)
 
-  git commit -m "$TEAM-$STORY: $1 ($PAIR)"
+  git commit -m "$TEAM-$STORY: $1 (@$MY_USER, @$PAIR_USER)"
 }
