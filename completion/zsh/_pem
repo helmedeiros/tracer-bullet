@@ -5,7 +5,7 @@
 
 local -a _1st_arguments
 _1st_arguments=(
-  "configure\:jira":"Configure jira credentials"
+  "configure":"optional configurations"
   "story\:commits":"list all commits for a story #"
   "story\:files":"list all files modified for a story #"
   "story\:diary":"add to jira as coments the commit from current day for a story #"
@@ -26,12 +26,7 @@ case "$words[1]" in
     configure)
     _command_args=(
       '(-a|--autocomplete)'{-a,--autocomplete}'[configure autocomplete]' \
-    )
-    ;;
-    configure:jira)
-    _command_args=(
-      '(-u|--user)'{-u,--user}'[jira username - GID]' \
-      '(-p|--password)'{-p,--password}'[jira password - GID]' \
+      '(-j|--jira)'{-j,--jira}'[configure jira credentials]' \
     )
     ;;
 

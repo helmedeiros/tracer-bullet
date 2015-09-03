@@ -1,6 +1,21 @@
 #!/bin/sh
 #
 # "configure" builtin command.
+function configure_options() {
+  case "$1" in
+
+     -a|--autocomplete)
+       configure_zsh_autocomplete $@
+       break;
+     ;;
+
+     -j|--jira|*)
+       configure_jira $@
+       break;
+     ;;
+   esac
+}
+
 function configure_zsh_autocomplete() {
   cd
 
@@ -28,9 +43,7 @@ function configure_jira() {
 function write_base64_jira_key() {
   echo "#!/usr/bin/env bash
 #
-function load_user_data() {
-  USER_JIRA_KEY=\""$1"\";
-}
+USER_JIRA_KEY=\""$1"\";
 "  > $BASEDIR/config/user_data.sh
 
 }
