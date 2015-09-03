@@ -14,6 +14,8 @@ function handle_options(){
     case $arg in
       "configure" ) configure_options $@;
       break;;
+      "commit" ) commit $@;
+      break;;
       "pair" ) pairing_options $@;
       break;;
       "story:files"		) story_files $2;

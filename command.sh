@@ -2,6 +2,7 @@
 #
 # commands gateway.
 source $(dirname $0)/config/constants.sh
+source $(dirname $0)/builtin/commit.sh
 source $(dirname $0)/builtin/configure.sh
 source $(dirname $0)/builtin/pair.sh
 source $(dirname $0)/builtin/story.sh

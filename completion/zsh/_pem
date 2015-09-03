@@ -6,6 +6,7 @@
 local -a _1st_arguments
 _1st_arguments=(
   "configure":"optional configurations"
+  "commit":"easy commit for configured projects"
   "pair":"Configure pairing informations"
   "story\:commits":"list all commits for a story #"
   "story\:files":"list all files modified for a story #"
