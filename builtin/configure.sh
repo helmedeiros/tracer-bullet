@@ -14,8 +14,13 @@ function configure_options() {
        break;
      ;;
 
-     -p|--project|*)
+     -p|--project)
        configure_project $3
+       break;
+     ;;
+
+     -u|--user)
+       configure_user $3
        break;
      ;;
 
@@ -57,4 +62,8 @@ USER_JIRA_KEY=\""$1"\";
 function configure_project() {
   run_cmd "git config --global current.project $1"
   define_project
+}
+
+function configure_user() {
+  run_cmd "git config --global $PROJECT_PREFIX.user $1"
 }

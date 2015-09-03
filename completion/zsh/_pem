@@ -30,6 +30,7 @@ case "$words[1]" in
       '(-a|--autocomplete)'{-a,--autocomplete}'[configure autocomplete]' \
       '(-j|--jira)'{-j,--jira}'[configure jira credentials]' \
       '(-p|--project)'{-p,--project}'[configure project]' \
+      '(-u|--user)'{-u,--user}'[configure the current project user]' \
     )
     ;;
   pair)
