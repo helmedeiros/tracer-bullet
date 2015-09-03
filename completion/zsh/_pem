@@ -35,6 +35,7 @@ case "$words[1]" in
     ;;
   pair)
     _command_args=(
+    '(-a|--alone)'{-a,--alone}'[When you are not pairing with no one]' \
     '(-w|--with)'{-w,--with}'[Im pairing with #]' \
     '(-s|--story)'{-s,--story}'[Im pairing on story #]' \
     )

@@ -7,5 +7,11 @@ function commit() {
   MY_USER=$(git config --global $PROJECT_PREFIX.user)
   PAIR_USER=$(git config --global $PROJECT_PREFIX.current.pair)
 
-  git commit -m "$TEAM-$STORY: $1 (@$MY_USER, @$PAIR_USER)"
+  PAIR="@$MY_USER"
+
+  if [[ ! -z "$PAIR_USER" ]]; then
+    PAIR="@$MY_USER, @$PAIR_USER"
+  fi
+
+  git commit -m "$TEAM-$STORY: $1 ($PAIR)"
 }

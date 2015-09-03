@@ -3,6 +3,11 @@
 # "pair" builtin command.
 function pairing_options() {
   case "$2" in
+    -a|--alone)
+      not_pairing
+      break;
+    ;;
+
      -s|--story)
        pairing_on_story $3
        break;
@@ -14,6 +19,10 @@ function pairing_options() {
       ;;
 
   esac
+}
+
+function not_pairing() {
+  run_cmd "git config --global --unset $PROJECT_PREFIX.current.pair"
 }
 
 function pairing_on_story() {
