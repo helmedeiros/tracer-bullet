@@ -1,6 +1,6 @@
 #!/bin/sh
 #
-version='1.4'
+version='1.5'
 progname=`basename $0`
 
 function version() {
