@@ -3,6 +3,10 @@
 # helps messages.
 scripts_usage_string="$progname [--version] [--help] <command> [<args>]";
 
+function include() {
+    [[ -f "$1" ]] && source "$1"
+}
+
 function list_commands(){
   printf "usage: %s\n\n" "$scripts_usage_string";
 

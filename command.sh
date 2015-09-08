@@ -1,6 +1,7 @@
 #!/bin/sh
 #
 # commands gateway.
+include $(dirname $0)/config/user_data.sh
 source $(dirname $0)/config/constants.sh
 source $(dirname $0)/builtin/commit.sh
 source $(dirname $0)/builtin/configure.sh
