@@ -56,7 +56,7 @@ function comment_in_jira() {
 }
 
 function story_diff(){
-  files=$(git log --oneline --grep="$PROJECT_PREFIX"-"$1" --name-only | grep -Eo "\w+/.*\.\w+" | sort -u)
+  files=$(git log --oneline --grep="$PROJECT_PREFIX"-"$1" --name-only | grep -Eo "\w+/.*\.\w+" | sort -u | grep "$2")
   for i in $files
     do
       story_diff_file $1 $i

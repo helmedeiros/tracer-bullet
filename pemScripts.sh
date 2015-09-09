@@ -24,7 +24,7 @@ function handle_options(){
       break;;
       "story:diary"   ) story_diary $2;
       break;;
-      "story:diff"   ) story_diff $2;
+      "story:diff"   ) story_diff $2 $3;
       break;;
       "--version"     ) version;
       break;;
