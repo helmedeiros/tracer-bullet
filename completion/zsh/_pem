@@ -40,6 +40,14 @@ case "$words[1]" in
     '(-s|--story)'{-s,--story}'[Im pairing on story #]' \
     )
     ;;
+  story:files)
+    _command_args=(
+    '(-t|--tests)'{-t,--tests}'[Show only Tests]' \
+    '(-s|--sql)'{-s,--sql}'[Show only SQLs]' \
+    )
+    ;;
+
+
 
 esac
 

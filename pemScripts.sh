@@ -18,7 +18,7 @@ function handle_options(){
       break;;
       "pair" ) pairing_options $@;
       break;;
-      "story:files"		) story_files $2;
+      "story:files"		) story_files_options $@;
       break;;
       "story:commits" ) story_commits $@;
       break;;

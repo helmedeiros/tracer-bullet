@@ -7,10 +7,30 @@ function story_commits() {
   git log --pretty=format:"%C(yellow)%ad%Creset %C(green)%an%Creset %s %C(yellow)%h%Creset" --date=short --grep="$PROJECT_PREFIX"-"$2" | sort -u
 }
 
+function story_files_options() {
+  case "$2" in
+    -t|--tests)
+      story_files $3 "Test.java"
+      break;
+    ;;
+
+     -s|--sql)
+       story_files $3 ".sql"
+       break;
+     ;;
+
+     *)
+        story_files $2 ""
+        break;
+      ;;
+
+  esac
+}
+
 function story_files() {
   echo "Listing $PROJECT_PREFIX-$1 Files";
 
-  files=$(git log --oneline --grep="$PROJECT_PREFIX"-"$1" --name-only | grep -Eo "\w+/.*\.\w+" | sort -u)
+  files=$(git log --oneline --grep="$PROJECT_PREFIX"-"$1" --name-only | grep -Eo "\w+/.*\.\w+" | sort -u | grep "$2")
 
   echo "$files"
 
