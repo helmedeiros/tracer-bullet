@@ -10,7 +10,11 @@ function story_commits() {
 function story_files() {
   echo "Listing $PROJECT_PREFIX-$1 Files";
 
-  git log --oneline --grep="$PROJECT_PREFIX"-"$1" --name-only | grep -Eo "\w+/.*\.\w+" | sort -u
+  files=$(git log --oneline --grep="$PROJECT_PREFIX"-"$1" --name-only | grep -Eo "\w+/.*\.\w+" | sort -u)
+
+  echo "$files"
+
+  files_summary "$files"
 }
 
 function story_diary() {
@@ -43,4 +47,14 @@ function story_diff_file(){
   first_log=$(git log --pretty=format:%h --grep="$PROJECT_PREFIX"-"$1" -- "$2" | tail -n 1)
   last_log=$(git log --pretty=format:%h --reverse --grep="$PROJECT_PREFIX"-"$1" -- "$2" | tail -n 1)
   run_cmd "git difftool -y $last_log $first_log^ -- $2"
+}
+
+function files_summary() {
+
+  totalFiles=`echo "$1" | wc -l`
+  totalTests=`echo "$1" | grep Test.java | wc -l`
+  totalSQL=`echo "$1" | grep .sql | wc -l`
+
+  echo "--------------------------------------------------"
+  printf "Total: %s | Tests: %s | SQL: %s\n" "$totalFiles" "$totalTests" "$totalSQL"
 }
