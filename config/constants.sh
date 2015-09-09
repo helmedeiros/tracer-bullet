@@ -2,6 +2,8 @@
 #
 function define_constants(){
   define_project;
+  TEST_PATTERN="Test.java"
+  SQL_PATTERN=".sql"
   BASEDIR=$(dirname $0)
 }
 

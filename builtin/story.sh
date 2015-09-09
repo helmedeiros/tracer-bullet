@@ -10,12 +10,12 @@ function story_commits() {
 function story_files_options() {
   case "$2" in
     -t|--tests)
-      story_files $3 "Test.java"
+      story_files $3 $TEST_PATTERN
       break;
     ;;
 
      -s|--sql)
-       story_files $3 ".sql"
+       story_files $3 $SQL_PATTERN
        break;
      ;;
 
@@ -72,8 +72,8 @@ function story_diff_file(){
 function files_summary() {
 
   totalFiles=`echo "$1" | wc -l`
-  totalTests=`echo "$1" | grep Test.java | wc -l`
-  totalSQL=`echo "$1" | grep .sql | wc -l`
+  totalTests=`echo "$1" | grep $TEST_PATTERN | wc -l`
+  totalSQL=`echo "$1" | grep $SQL_PATTERN | wc -l`
 
   echo "--------------------------------------------------"
   printf "Total: %s | Tests: %s | SQL: %s\n" "$totalFiles" "$totalTests" "$totalSQL"
