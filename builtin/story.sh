@@ -38,16 +38,18 @@ function missing_tests() {
   allfiles=$(git log --oneline --grep="$PROJECT_PREFIX"-"$1" --name-only | grep -Eo "\w+/.*\.\w+" | sort -u )
   deletedFiles=$(git log --diff-filter=D --oneline --grep="$PROJECT_PREFIX"-"$1" --name-only | grep -Eo "\w+/.*\.\w+" | sort -u )
 
-
-
   while read -r file; do
     if [ `echo $deletedFiles | grep -c "$file" ` -le 0 ]; then
       okLines+=$(printf '\n %s \n' "$file")
     fi
   done <<< "$allfiles"
 
-  notTestFiles=$(echo "$okLines" | grep ".java" | grep -v "$2" | xargs -n 1 basename | rev | cut -f 2- -d '.' | rev)
-  testFiles=$(echo "$okLines" | sort -u | grep "$2" | xargs -n 1 basename)
+  find_missing_tests_for "$okLines" $2
+}
+
+function find_missing_tests_for() {
+  notTestFiles=$(echo "$1" | grep ".java" | grep -v "$2" | xargs -n  1 basename | rev | cut -f 2- -d '.' | rev)
+  testFiles=$(echo "$1" | sort -u | grep "$2" | xargs -n 1 basename)
 
   while read -r notTestfile; do
     if [ `echo $testFiles | grep -c "$notTestfile" ` -le 0 ]; then
