@@ -98,11 +98,21 @@ function comment_in_jira() {
 }
 
 function story_diff(){
-  files=$(git log --diff-filter=ACMRTUXB --oneline --grep="$PROJECT_PREFIX"-"$1" --name-only | grep -Eo "\w+/.*\.\w+" | sort -u | grep "$2")
-  for i in $files
+  allfiles=$(git log --diff-filter=ACMRTUXB --oneline --grep="$PROJECT_PREFIX"-"$1" --name-only | grep -Eo "\w+/.*\.\w+" | sort -u | grep "$2")
+  deletedFiles=$(git log --diff-filter=D --oneline --grep="$PROJECT_PREFIX"-"$1" --name-only | grep -Eo "\w+/.*\.\w+" | sort -u )
+
+  while read -r file; do
+    if [ `echo $deletedFiles | grep -c "$file" ` -le 0 ]; then
+      okLines+=$(printf '\n %s \n' "$file")
+    fi
+  done <<< "$allfiles"
+
+  for i in $okLines
     do
       story_diff_file $1 $i
     done
+
+  files_summary "$okLines"
 }
 
 function story_diff_file(){
