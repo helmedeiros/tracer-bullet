@@ -53,15 +53,18 @@ function find_missing_tests_for() {
 
   while read -r notTestfile; do
     if [ `echo $testFiles | grep -c "$notTestfile" ` -le 0 ]; then
-      printf '%s is missing\n' "$notTestfile"
+      notTestedFiles+=$(printf '\n %s \n' "$notTestfile")
     fi
   done <<< "$notTestFiles"
+
+  echo "$notTestedFiles"
+  files_summary "$notTestedFiles"
 }
 
 function story_files() {
   echo "Listing $PROJECT_PREFIX-$1 Files";
 
-  files=$(git log --oneline --grep="$PROJECT_PREFIX"-"$1" --name-only | grep -Eo "\w+/.*\.\w+" | sort -u | grep "$2")
+  files=$(git log --diff-filter=ACMRTUXB --oneline --grep="$PROJECT_PREFIX"-"$1" --name-only | grep -Eo "\w+/.*\.\w+" | sort -u | grep "$2")
 
   echo "$files"
 
@@ -87,7 +90,7 @@ function comment_in_jira() {
 }
 
 function story_diff(){
-  files=$(git log --oneline --grep="$PROJECT_PREFIX"-"$1" --name-only | grep -Eo "\w+/.*\.\w+" | sort -u | grep "$2")
+  files=$(git log --diff-filter=ACMRTUXB --oneline --grep="$PROJECT_PREFIX"-"$1" --name-only | grep -Eo "\w+/.*\.\w+" | sort -u | grep "$2")
   for i in $files
     do
       story_diff_file $1 $i
