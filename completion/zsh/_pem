@@ -47,8 +47,12 @@ case "$words[1]" in
     '(-s|--sql)'{-s,--sql}'[Show only SQLs]' \
     )
     ;;
-
-
+  story:diary)
+    _command_args=(
+    '(-t|--today)'{-t,--today}'[Post to jira todays diary]' \
+    '(-y|--yesterday)'{-y,--yesterday}'[Post to jira yesterdays diary]' \
+    )
+    ;;
 
 esac
 

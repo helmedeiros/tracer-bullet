@@ -80,10 +80,25 @@ function story_files() {
 }
 
 function story_diary() {
-  echo "Logging todays commits into $PROJECT_PREFIX-$1"
-  logs=$(git log --since yesterday --grep "$PROJECT_PREFIX-$1" --pretty=format:'%cd : %s' --date=local | perl -p -e 's/\n/\\n/')
+  case "$2" in
+    -t|--today)
+      story_number=$3;
+      since="midnight";
+    ;;
+    -y|--yesterday)
+      story_number=$3;
+      since="yesterday";
+    ;;
+     *)
+        story_number=$2;
+        since="midnight";
+      ;;
+  esac
 
-  comment_in_jira $1 "$logs"
+  echo "Logging todays commits into $PROJECT_PREFIX-$story_number"
+  logs=$(git log --since "$since" --grep "$PROJECT_PREFIX-$story_number" --pretty=format:'%cd : %s' --date=local | perl -p -e 's/\n/\\n/')
+
+  comment_in_jira $story_number "$logs"
 }
 
 function comment_in_jira() {

@@ -22,7 +22,7 @@ function handle_options(){
       break;;
       "story:commits" ) story_commits $@;
       break;;
-      "story:diary"   ) story_diary $2;
+      "story:diary"   ) story_diary $@;
       break;;
       "story:diff"   ) story_diff $2 $3;
       break;;
