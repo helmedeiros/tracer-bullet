@@ -12,14 +12,14 @@ _1st_arguments=(
   "story\:files":"list all files modified for a story #"
   "story\:diary":"add to jira as coments the commit from current day for a story #"
   "story\:diff":"diff all changed files for a story #"
-  "--version":"show pete client version"
-  "--help":"show pete client help"
+  "--version":"show version"
+  "--help":"show help"
 )
 
 _arguments '*:: :->command'
 
 if (( CURRENT == 1 )); then
-  _describe -t commands "pete command" _1st_arguments
+  _describe -t commands "command" _1st_arguments
   return
 fi
 
