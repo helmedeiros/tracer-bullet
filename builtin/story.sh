@@ -89,6 +89,10 @@ function story_diary() {
       story_number=$3;
       since="yesterday";
     ;;
+    -d|--days)
+      story_number=$4;
+      since="$3.days";
+    ;;
      *)
         story_number=$2;
         since="midnight";
