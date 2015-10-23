@@ -51,6 +51,7 @@ case "$words[1]" in
     _command_args=(
     '(-t|--today)'{-t,--today}'[Post to jira todays diary]' \
     '(-y|--yesterday)'{-y,--yesterday}'[Post to jira yesterdays diary]' \
+    '(-d|--days)'{-d,--days}'[Post to jira # days diary]' \
     )
     ;;
 
