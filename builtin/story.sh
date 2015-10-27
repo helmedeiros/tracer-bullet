@@ -110,7 +110,9 @@ function comment_in_jira() {
 
   if [ ! -z "$logs" -a "$logs" != " " ]; then
     json="{\"update\": {\"comment\": [{\"add\": {\"body\": \"${logs}\" }}]}}"
-    curl -D- -X PUT --data "$json" -H "Authorization: Basic $USER_JIRA_KEY" -H "Content-Type: application/json" "https://jira.com/rest/api/2/issue/$PROJECT_PREFIX-$1"
+    curl -s -D- -X PUT --data "$json" -H "Authorization: Basic ${USER_JIRA_KEY}" -H "Content-Type: application/json" "https://jira.com/rest/api/2/issue/$PROJECT_PREFIX-$1" > /dev/null
+    echo "DONE"
+
   else
     echo "No COMMITS to be logged $PROJECT_PREFIX-$1"
   fi
