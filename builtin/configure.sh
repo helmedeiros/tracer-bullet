@@ -47,7 +47,7 @@ function configure_jira() {
   echo Password:
   read -s password
 
-  write_base64_jira_key `printf "$user:$password" | openssl enc -base64`
+  write_base64_jira_key `printf "$user:$password" | openssl enc -base64 -A`
 
 }
 
