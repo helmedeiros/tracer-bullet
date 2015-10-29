@@ -107,10 +107,11 @@ function story_diary() {
 
 function comment_in_jira() {
   logs=$2
+  user_jira_key_escaped=$(echo $USER_JIRA_KEY | tr -d '\n')
 
   if [ ! -z "$logs" -a "$logs" != " " ]; then
     json="{\"update\": {\"comment\": [{\"add\": {\"body\": \"${logs}\" }}]}}"
-    curl -s -D- -X PUT --data "$json" -H "Authorization: Basic ${USER_JIRA_KEY}" -H "Content-Type: application/json" "https://jira.com/rest/api/2/issue/$PROJECT_PREFIX-$1" > /dev/null
+    curl -s -D- -X PUT --data "$json" -H "Authorization: Basic ${user_jira_key_escaped}" -H "Content-Type: application/json" "https://jira.com/rest/api/2/issue/$PROJECT_PREFIX-$1" > /dev/null
     echo "DONE"
 
   else
