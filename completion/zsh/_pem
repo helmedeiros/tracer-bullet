@@ -8,6 +8,7 @@ _1st_arguments=(
   "configure":"optional configurations"
   "commit":"easy commit for configured projects"
   "pair":"Configure pairing informations"
+  "story\:by":"list all stories played by #"
   "story\:commits":"list all commits for a story #"
   "story\:files":"list all files modified for a story #"
   "story\:diary":"add to jira as coments the commit from current day for a story #"

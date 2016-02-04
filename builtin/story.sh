@@ -7,6 +7,11 @@ function story_commits() {
   git log --pretty=format:"%C(yellow)%ad%Creset %C(green)%an%Creset %s %C(yellow)%h%Creset" --date=short --grep="$PROJECT_PREFIX"-"$2" | sort -u
 }
 
+function story_by() {
+  echo "Listing story played by: $2 in the past 3 months";
+    git log --grep="$2" --since 3.months --no-merges --format=%s | awk '{print $1}' | awk -F'-' '{print $2}' | awk '!x[$0]++' | awk -F':' '{print $1}' | sort -n
+}
+
 function story_files_options() {
   case "$2" in
     -mt|--missing-tests)
