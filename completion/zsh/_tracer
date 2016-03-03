@@ -1,7 +1,7 @@
-#compdef pem
+#compdef tracer
 
 # Autocomplete plugin for Oh-My-Zsh
-# Requires: Pem scripts (http://github.com/helmedeiros/pem-scripts.git)
+# Requires: Trace Bullet (http://github.com/helmedeiros/tracer-bullet.git)
 
 local -a _1st_arguments
 _1st_arguments=(
