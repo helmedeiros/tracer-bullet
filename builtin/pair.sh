@@ -1,6 +1,8 @@
 #!/bin/sh
 #
 # "pair" builtin command.
+source $(dirname $0)/config/constants.sh
+
 function pairing_options() {
   case "$2" in
     -a|--alone)
@@ -22,13 +24,16 @@ function pairing_options() {
 }
 
 function not_pairing() {
-  run_cmd "git config --global --unset $PROJECT_PREFIX.current.pair"
+  define_project
+  run_cmd "git config --local --unset $PROJECT_PREFIX.current.pair"
 }
 
 function pairing_on_story() {
-  run_cmd "git config --global $PROJECT_PREFIX.current.story $1"
+  define_project
+  run_cmd "git config --local $PROJECT_PREFIX.current.story $1"
 }
 
 function pairing_with() {
-  run_cmd "git config --global $PROJECT_PREFIX.current.pair $1"
+  define_project
+  run_cmd "git config --local $PROJECT_PREFIX.current.pair $1"
 }

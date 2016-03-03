@@ -1,6 +1,8 @@
 #!/bin/sh
 #
 # "configure" builtin command.
+source $(dirname $0)/config/constants.sh
+
 function configure_options() {
   case "$2" in
 
@@ -60,10 +62,11 @@ USER_JIRA_KEY=\""$1"\";
 }
 
 function configure_project() {
-  run_cmd "git config --global current.project $1"
+  run_cmd "git config --local current.project $1"
   define_project
 }
 
 function configure_user() {
-  run_cmd "git config --global $PROJECT_PREFIX.user $1"
+  define_project
+  run_cmd "git config --local $PROJECT_PREFIX.user $1"
 }

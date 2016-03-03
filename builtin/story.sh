@@ -1,7 +1,10 @@
 #!/bin/sh
 #
 # "story" builtin command.
+source $(dirname $0)/config/constants.sh
+
 function story_commits() {
+  define_project
   echo "Listing $PROJECT_PREFIX-$2 Commits";
 
   git log --pretty=format:"%C(yellow)%ad%Creset %C(green)%an%Creset %s %C(yellow)%h%Creset" --date=short --grep="$PROJECT_PREFIX"-"$2" | sort -u
@@ -38,6 +41,8 @@ function story_files_options() {
 }
 
 function missing_tests() {
+  define_project
+
   echo "Listing missing tests $PROJECT_PREFIX-$1 Files";
 
   allfiles=$(git log --oneline --grep="$PROJECT_PREFIX"-"$1" --name-only | grep -Eo "\w+/.*\.\w+" | sort -u )
@@ -67,6 +72,8 @@ function find_missing_tests_for() {
 }
 
 function story_files() {
+  define_project
+
   echo "Listing $PROJECT_PREFIX-$1 Files";
 
   allfiles=$(git log --diff-filter=ACMRTUXB --oneline --grep="$PROJECT_PREFIX"-"$1" --name-only | grep -Eo "\w+/.*\.\w+" | sort -u | grep "$2")
@@ -85,6 +92,8 @@ function story_files() {
 }
 
 function story_diary() {
+  define_project
+
   case "$2" in
     -t|--today)
       story_number=$3;
@@ -111,6 +120,7 @@ function story_diary() {
 }
 
 function comment_in_jira() {
+  define_project
   logs=$2
 
   if [ ! -z "$logs" -a "$logs" != " " ]; then
@@ -124,6 +134,7 @@ function comment_in_jira() {
 }
 
 function story_diff(){
+  define_project
   allfiles=$(git log --diff-filter=ACMRTUXB --oneline --grep="$PROJECT_PREFIX"-"$1" --name-only | grep -Eo "\w+/.*\.\w+" | sort -u | grep "$2")
   deletedFiles=$(git log --diff-filter=D --oneline --grep="$PROJECT_PREFIX"-"$1" --name-only | grep -Eo "\w+/.*\.\w+" | sort -u )
 
@@ -142,6 +153,7 @@ function story_diff(){
 }
 
 function story_diff_file(){
+  define_project
   first_log=$(git log --pretty=format:%h --grep="$PROJECT_PREFIX"-"$1" -- "$2" | tail -n 1)
   last_log=$(git log --pretty=format:%h --reverse --grep="$PROJECT_PREFIX"-"$1" -- "$2" | tail -n 1)
   run_cmd "git difftool -y $last_log $first_log^ -- $2"
