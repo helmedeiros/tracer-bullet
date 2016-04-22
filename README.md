@@ -1,14 +1,7 @@
 tracer-bullet
 ===
 
-<<<<<<< HEAD
-<<<<<<< HEAD
 Shell script project to deal with day-by-day agile projects tracing activities.
-=======
-Shell script project to deal with day-by-day activities in GAP pem projects.
-=======
-Shell script project to deal with day-by-day agile projects tracing activities.
->>>>>>> d7c5f25... change project name
 
 Installation
 ------------
@@ -53,4 +46,3 @@ Open a new terminal and type the following line:
 ```
 tracer  --help
 ```
->>>>>>> b63a494... Adding order
