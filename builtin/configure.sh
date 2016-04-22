@@ -2,6 +2,7 @@
 #
 # "configure" builtin command.
 source $(dirname $0)/config/constants.sh
+source $(dirname $0)/builtin/jira.sh
 
 function configure_options() {
   case "$2" in
@@ -40,25 +41,6 @@ function configure_zsh_autocomplete() {
     echo "autoload -U compinit" >> .zshrc
     echo "compinit" >> .zshrc
   fi
-}
-
-function configure_jira() {
-  echo User:
-  read user
-
-  echo Password:
-  read -s password
-
-  write_base64_jira_key `printf "$user:$password" | openssl enc -base64 -A`
-
-}
-
-function write_base64_jira_key() {
-  echo "#!/usr/bin/env bash
-#
-USER_JIRA_KEY=\""$1"\";
-"  > $BASEDIR/config/user_data.sh
-
 }
 
 function configure_project() {
