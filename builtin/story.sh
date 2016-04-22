@@ -123,10 +123,11 @@ function comment_in_jira() {
   define_project
   logs=$2
   jira_key=$(git config --local $PROJECT_PREFIX.jira.key)
+  jira_url=$(git config --local $PROJECT_PREFIX.jira.url)
 
   if [ ! -z "$logs" -a "$logs" != " " ]; then
     json="{\"update\": {\"comment\": [{\"add\": {\"body\": \"${logs}\" }}]}}"
-    curl -s -D- -X PUT --data "$json" -H "Authorization: Basic ${jira_key}" -H "Content-Type: application/json" "$JIRA_API_ADDRESS/$PROJECT_PREFIX-$1" > /dev/null
+    curl -s -D- -X PUT --data "$json" -H "Authorization: Basic ${jira_key}" -H "Content-Type: application/json" "$jira_url/$PROJECT_PREFIX-$1" > /dev/null
     echo "DONE"
 
   else
