@@ -8,6 +8,7 @@ _1st_arguments=(
   "configure":"optional configurations"
   "commit":"easy commit for configured projects"
   "pair":"Configure pairing informations"
+  "story\:after\:hash":"list all stories after commit with HASH #"
   "story\:by":"list all stories played by #"
   "story\:commits":"list all commits for a story #"
   "story\:files":"list all files modified for a story #"

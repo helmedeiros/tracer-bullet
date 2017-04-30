@@ -3,6 +3,12 @@
 # "story" builtin command.
 source $(dirname $0)/config/constants.sh
 
+function stories_after_hash() {
+  define_project
+  echo "Listing stories played after commit: $2";
+  git log --pretty=format:"%s %C(yellow)%h%Creset" --date=short $2.. | awk -F'[: ]' '{print $1}' | grep "^$PROJECT_PREFIX" | sort -u
+}
+
 function story_commits() {
   define_project
   echo "Listing $PROJECT_PREFIX-$2 Commits";

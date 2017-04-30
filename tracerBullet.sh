@@ -18,6 +18,8 @@ function handle_options(){
       break;;
       "pair" ) pairing_options $@;
       break;;
+      "story:after:hash" ) stories_after_hash $@;
+      break;;
       "story:by"		) story_by $@;
       break;;
       "story:files"		) story_files_options $@;
