@@ -17,8 +17,39 @@ function story_commits() {
 }
 
 function story_by() {
-  echo "Listing story played by: $2 in the past 10 months";
-    git log --since 10.months --no-merges --pretty=format:"%s -- %an" | grep "$2" | awk '{print $1}' | awk -F'-' '{print $2}' | awk '!x[$0]++' | awk -F':' '{print $1}' | sort -n
+  case "$2" in
+    -d|--detail)
+      echo "Listing story played by: $3 in the past 10 months";
+      printStories $3 "jira";
+      break;
+    ;;
+
+    *)
+      echo "Listing story played by: $2 in the past 10 months";
+      printStories $2 "";
+      break;
+     ;;
+
+  esac
+}
+
+function printStories(){
+  define_project
+  allStories=$(git log --since 10.months --no-merges --pretty=format:"%s -- %an" | grep "$1" | awk -F'[: ]' '{print $1}' | grep "^$PROJECT_PREFIX" | sort -u);
+
+  case "$2" in
+    "jira")
+      while read -r story; do
+        get_issue_from_jira "$PROJECT_PREFIX-$story";
+      done <<< "$allStories"
+      break;
+    ;;
+
+    *)
+      echo "$allStories";
+      break;
+      ;;
+  esac
 }
 
 function story_files_options() {

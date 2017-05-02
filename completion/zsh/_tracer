@@ -42,6 +42,11 @@ case "$words[1]" in
     '(-s|--story)'{-s,--story}'[Im pairing on story #]' \
     )
     ;;
+  story:by)
+    _command_args=(
+    '(-d|--detail)'{-d,--detail}'[jira details on story #]' \
+    )
+    ;;
   story:files)
     _command_args=(
     '(-mt|--missing-tests)'{-mt,--missing-tests}'[Show missing Tests]' \
