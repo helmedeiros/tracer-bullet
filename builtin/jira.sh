@@ -33,8 +33,8 @@ function write_base64_jira_key() {
 
 function get_issue_from_jira() {
   story=$1
-  jira_key=$(git config --global $PROJECT_PREFIX.jira.key)
-  jira_url=$(git config --global $PROJECT_PREFIX.jira.url)
+  jira_key=$(git config --local $PROJECT_PREFIX.jira.key)
+  jira_url=$(git config --local $PROJECT_PREFIX.jira.url)
 
   issue=$(curl -s -D- -X GET -H "Authorization: Basic ${jira_key}" "Content-Type: application/json" "$jira_url/$story?fields=summary,customfield_10073,status")
   title=$(jsonval "$issue" "summary" | awk -F'|' '{print $3}')

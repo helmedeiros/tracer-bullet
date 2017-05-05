@@ -40,7 +40,7 @@ function printStories(){
   case "$2" in
     "jira")
       while read -r story; do
-        get_issue_from_jira "$PROJECT_PREFIX-$story";
+        get_issue_from_jira "$story";
       done <<< "$allStories"
       break;
     ;;
