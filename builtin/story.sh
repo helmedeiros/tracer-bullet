@@ -3,12 +3,6 @@
 # "story" builtin command.
 source $(dirname $0)/config/constants.sh
 
-function stories_after_hash() {
-  define_project
-  echo "Listing stories played after commit: $2";
-  git log --pretty=format:"%s %C(yellow)%h%Creset" --date=short $2.. | awk -F'[: ]' '{print $1}' | grep "^$PROJECT_PREFIX" | sort -u
-}
-
 function story_commits() {
   define_project
   echo "Listing $PROJECT_PREFIX-$2 Commits";
@@ -16,37 +10,66 @@ function story_commits() {
   git log --pretty=format:"%C(yellow)%ad%Creset %C(green)%an%Creset %s %C(yellow)%h%Creset" --date=short --grep="$PROJECT_PREFIX"-"$2" | sort -u
 }
 
-function story_by() {
+function stories_after_hash_options() {
   case "$2" in
     -d|--detail)
-      echo "Listing story played by: $3 in the past 10 months";
-      printStories $3 "jira";
+      echo "Listing stories played after commit: $3";
+      print_all_stories_after $3 "jira";
       break;
     ;;
 
     *)
-      echo "Listing story played by: $2 in the past 10 months";
-      printStories $2 "";
+      echo "Listing stories played after commit: $2";
+      print_all_stories_after $2 "";
       break;
      ;;
 
   esac
 }
 
-function printStories(){
-  define_project
-  allStories=$(git log --since 10.months --no-merges --pretty=format:"%s -- %an" | grep "$1" | awk -F'[: ]' '{print $1}' | grep "^$PROJECT_PREFIX" | sort -u);
+function print_all_stories_after() {
+    define_project
+    allStories=$(git log --pretty=format:"%s %C(yellow)%h%Creset" --date=short $1.. | awk -F'[: ]' '{print $1}' | grep "^$PROJECT_PREFIX" | sort -u)
 
+    print_stories "$allStories" $2
+}
+
+function story_by_options() {
   case "$2" in
-    "jira")
-      while read -r story; do
-        get_issue_from_jira "$story";
-      done <<< "$allStories"
+    -d|--detail)
+      echo "Listing story played by: $3 in the past 10 months";
+      print_all_stories_by $3 "jira";
       break;
     ;;
 
     *)
-      echo "$allStories";
+      echo "Listing story played by: $2 in the past 10 months";
+      print_all_stories_by $2 "";
+      break;
+     ;;
+
+  esac
+}
+
+function print_all_stories_by() {
+    define_project
+    allStories=$(git log --since 10.months --no-merges --pretty=format:"%s -- %an" | grep "$1" | awk -F'[: ]' '{print $1}' | grep "^$PROJECT_PREFIX" | sort -u);
+
+    print_stories "$allStories" $2
+}
+
+function print_stories(){
+  define_project
+  case "$2" in
+    "jira")
+      while read -r story; do
+        get_issue_from_jira "$story";
+      done <<< "$1"
+      break;
+    ;;
+
+    *)
+      echo "$1";
       break;
       ;;
   esac

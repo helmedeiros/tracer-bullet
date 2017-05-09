@@ -35,6 +35,7 @@ function get_issue_from_jira() {
   story=$1
   jira_key=$(git config --local $PROJECT_PREFIX.jira.key)
   jira_url=$(git config --local $PROJECT_PREFIX.jira.url)
+  url=$(echo $jira_url | cut -d'/' -f3)
 
   issue=$(curl -s -D- -X GET -H "Authorization: Basic ${jira_key}" "Content-Type: application/json" "$jira_url/$story?fields=summary,customfield_10073,status")
   title=$(jsonval "$issue" "summary" | awk -F'|' '{print $3}')

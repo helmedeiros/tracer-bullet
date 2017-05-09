@@ -18,9 +18,9 @@ function handle_options(){
       break;;
       "pair" ) pairing_options $@;
       break;;
-      "story:after:hash" ) stories_after_hash $@;
+      "story:after:hash" ) stories_after_hash_options $@;
       break;;
-      "story:by"		) story_by $@;
+      "story:by"		) story_by_options $@;
       break;;
       "story:files"		) story_files_options $@;
       break;;
