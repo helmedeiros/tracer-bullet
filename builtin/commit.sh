@@ -5,7 +5,6 @@ source $(dirname $0)/config/constants.sh
 
 function commit() {
   define_project
-  commit_message="${@:2}"
 
   TEAM=$PROJECT_PREFIX
   STORY=$(git config --local $PROJECT_PREFIX.current.story)
@@ -18,5 +17,21 @@ function commit() {
     PAIR="@$MY_USER, @$PAIR_USER"
   fi
 
-  git commit -m "$TEAM-$STORY: $commit_message ($PAIR)"
+  echo Title:
+  read title
+
+  echo Why?
+  read why
+
+  echo How?
+  read how
+
+  git commit -m "$TEAM-$STORY: $title ($PAIR)
+
+  Why?
+    $why
+
+  How?
+    $how
+  ";
 }
