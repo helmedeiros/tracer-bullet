@@ -14,25 +14,25 @@ Installation
 
 `tracer` has some parts, but I've tried to simplify installation - as much as I could!
 
-#####1 Clone down the repository:
+##### 1 Clone down the repository:
 
 ```
 http://github.com/helmedeiros/tracer-bullet.git
 ```
 
-#####2	Make the command executable:
+##### 2	Make the command executable:
 
 ```
 chmod +x tracer
 ```
 
-#####3	Add the address from where you've cloned the project to your `.bashrc` or `.zshrc` file's PATH variable. Here's how mine looks
+##### 3	Add the address from where you've cloned the project to your `.bashrc` or `.zshrc` file's PATH variable. Here's how mine looks
 
 ```
 export PATH=${PATH}:/Users/guest/Projects/tracer/
 ```
 
-#####4 Make sure you reload your shell with
+##### 4 Make sure you reload your shell with
 
 ```
 source ~/.bashrc
