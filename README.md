@@ -3,6 +3,8 @@ tracer-bullet
 
 Shell script project to deal with day-by-day agile projects tracing activities.
 
+![Example](.github/tracer_example.gif)
+
 Installation
 ------------
 
