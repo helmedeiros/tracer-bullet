@@ -3,6 +3,50 @@
 # "story" builtin command.
 source $(dirname $0)/config/constants.sh
 
+function story_new() {
+  define_project
+
+  case "$2" in
+    -t|--title)
+      STORY=$(git config --local $PROJECT_PREFIX.current.story)
+
+      if [ ! -z "$STORY" -a "$STORY" != " " ]; then
+        startStory $PROJECT_PREFIX $STORY $3
+      else
+        echo "Story number is missing"
+      fi
+
+      break;
+    ;;
+    -n|--number)
+
+      echo Story Title:
+      read title
+
+      startStory $PROJECT_PREFIX $3 $title
+
+      break;
+    ;;
+    *)
+      echo Story number:
+      read number
+
+      echo Story Title:
+      read title
+
+      startStory $PROJECT_PREFIX $number $title
+      break;
+    ;;
+  esac
+
+}
+
+function startStory() {
+  echo "Start implementing story $1-$2"
+
+  git checkout -b features/$1-$2-$3
+}
+
 function story_commits() {
   define_project
   echo "Listing $PROJECT_PREFIX-$2 Commits";

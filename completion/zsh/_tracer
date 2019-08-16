@@ -8,6 +8,7 @@ _1st_arguments=(
   "configure":"optional configurations"
   "commit":"easy commit for configured projects"
   "pair":"Configure pairing informations"
+  "story\:new":" start implementing a new story #"
   "story\:after\:hash":"list all stories after commit with HASH #"
   "story\:by":"list all stories played by #"
   "story\:commits":"list all commits for a story #"
@@ -45,6 +46,12 @@ case "$words[1]" in
   story:after:hash)
     _command_args=(
     '(-d|--detail)'{-d,--detail}'[jira details on story #]' \
+    )
+    ;;
+  story:new)
+    _command_args=(
+    '(-t|--tittle)'{-t,--tittle}'[new story with tittle #]' \
+    '(-n|--number)'{-n,--number}'[new story with number #]' \
     )
     ;;
   story:by)
