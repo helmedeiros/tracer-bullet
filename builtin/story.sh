@@ -42,9 +42,13 @@ function story_new() {
 }
 
 function startStory() {
+  define_project
+
   echo "Start implementing story $1-$2"
 
-  git checkout -b features/$1-$2-$3
+  run_cmd "git checkout -b features/$1-$2-$3"
+
+  run_cmd "git config --local $PROJECT_PREFIX.current.story $2"
 }
 
 function story_commits() {
