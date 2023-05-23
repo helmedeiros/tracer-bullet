@@ -26,12 +26,14 @@ function commit() {
   echo How?
   read how
 
-  git commit -m "$TEAM-$STORY: $title ($PAIR)
+  git commit -m "$title
 
   Why?
     $why
 
   How?
     $how
+
+  Story: $TEAM-$STORY:   
   ";
 }
