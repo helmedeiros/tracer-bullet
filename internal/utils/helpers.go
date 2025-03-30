@@ -1,6 +1,8 @@
 package utils
 
 import (
+	"crypto/rand"
+	"encoding/base64"
 	"fmt"
 	"os"
 	"os/exec"
@@ -55,4 +57,11 @@ func RunCommand(command string, args ...string) (string, error) {
 		return "", fmt.Errorf("failed to run command %s: %w", command, err)
 	}
 	return strings.TrimSpace(string(output)), nil
+}
+
+// GenerateID generates a unique ID using random bytes
+func GenerateID() string {
+	b := make([]byte, 8)
+	rand.Read(b)
+	return base64.URLEncoding.EncodeToString(b)[:8]
 }

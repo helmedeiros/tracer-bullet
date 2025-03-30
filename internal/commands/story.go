@@ -1,6 +1,10 @@
 package commands
 
 import (
+	"fmt"
+
+	"github.com/helmedeiros/tracer-bullet/internal/config"
+	"github.com/helmedeiros/tracer-bullet/internal/story"
 	"github.com/spf13/cobra"
 )
 
@@ -14,8 +18,47 @@ var storyNewCmd = &cobra.Command{
 	Use:   "new",
 	Short: "Create a new story",
 	Long:  `Create a new story with title, description, and other metadata.`,
-	Run: func(cmd *cobra.Command, args []string) {
-		// TODO: Implement story creation
+	RunE: func(cmd *cobra.Command, args []string) error {
+		// Get current user from config
+		cfg, err := config.LoadConfig()
+		if err != nil {
+			return fmt.Errorf("failed to load config: %w", err)
+		}
+
+		// Get flag values
+		title, _ := cmd.Flags().GetString("title")
+		description, _ := cmd.Flags().GetString("description")
+		tags, _ := cmd.Flags().GetStringSlice("tags")
+
+		// Create new story
+		s, err := story.NewStory(title, description, cfg.AuthorName)
+		if err != nil {
+			return err
+		}
+
+		// Set tags if provided
+		if len(tags) > 0 {
+			s.Tags = tags
+		}
+
+		// Save story
+		if err := s.Save(); err != nil {
+			return err
+		}
+
+		// Write output to stdout
+		fmt.Fprintf(cmd.OutOrStdout(), "Created new story: %s\n", s.ID)
+		fmt.Fprintf(cmd.OutOrStdout(), "Title: %s\n", s.Title)
+		if s.Description != "" {
+			fmt.Fprintf(cmd.OutOrStdout(), "Description: %s\n", s.Description)
+		}
+		if len(s.Tags) > 0 {
+			fmt.Fprintf(cmd.OutOrStdout(), "Tags: %v\n", s.Tags)
+		}
+		fmt.Fprintf(cmd.OutOrStdout(), "Author: %s\n", s.Author)
+		fmt.Fprintf(cmd.OutOrStdout(), "Status: %s\n", s.Status)
+
+		return nil
 	},
 }
 
@@ -74,6 +117,13 @@ var storyDiffCmd = &cobra.Command{
 }
 
 func init() {
+	// Add flags to new command
+	storyNewCmd.Flags().StringP("title", "t", "", "Story title (required)")
+	storyNewCmd.Flags().StringP("description", "d", "", "Story description")
+	storyNewCmd.Flags().StringSlice("tags", []string{}, "Story tags")
+	storyNewCmd.MarkFlagRequired("title")
+
+	// Add commands to root
 	StoryCmd.AddCommand(storyNewCmd)
 	StoryCmd.AddCommand(storyAfterHashCmd)
 	StoryCmd.AddCommand(storyByCmd)
