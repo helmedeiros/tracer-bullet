@@ -36,3 +36,13 @@ The change simplifies the linting setup while keeping important checks for:
 - Code complexity
 - Import organization
 - Security
+
+chore: add yaml.v3 dependency
+
+This commit:
+- Adds gopkg.in/yaml.v3 as a project dependency
+- Fixes the CI build error related to undefined yaml package
+- Ensures proper YAML handling for configuration files
+
+The change addresses the CI error:
+"undefined: yaml (typecheck)"
