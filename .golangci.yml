@@ -10,7 +10,6 @@ issues:
       linters:
         - gocyclo
         - gosec
-        - gomnd
         - gocognit
         - goconst
 
@@ -31,7 +30,6 @@ linters:
     - revive
     - gocognit
     - goconst
-    - gomnd
     - gomoddirectives
     - gomodguard
 
@@ -40,10 +38,6 @@ linters-settings:
     min-complexity: 15
   gocognit:
     min-complexity: 15
-  gomnd:
-    settings:
-      mnd:
-        checks: assignment,argument,return
   revive:
     rules:
       - name: exported

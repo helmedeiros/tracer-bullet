@@ -22,3 +22,17 @@ This commit fixes the CI build by:
 
 The change addresses the CI error:
 "unknown linters: 'mnd', run 'golangci-lint help linters'"
+
+fix: remove magic number linter from configuration
+
+This commit:
+- Removes the magic number linter (gomnd/mnd) from configuration
+- Resolves version compatibility issues between local and CI environments
+- Maintains other essential linters for code quality
+
+The change simplifies the linting setup while keeping important checks for:
+- Code formatting
+- Error handling
+- Code complexity
+- Import organization
+- Security
