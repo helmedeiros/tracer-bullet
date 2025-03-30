@@ -1,0 +1,497 @@
+
+<!DOCTYPE html>
+<html>
+	<head>
+		<meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+		<title>tracer: Go Coverage Report</title>
+		<style>
+			body {
+				background: black;
+				color: rgb(80, 80, 80);
+			}
+			body, pre, #legend span {
+				font-family: Menlo, monospace;
+				font-weight: bold;
+			}
+			#topbar {
+				background: black;
+				position: fixed;
+				top: 0; left: 0; right: 0;
+				height: 42px;
+				border-bottom: 1px solid rgb(80, 80, 80);
+			}
+			#content {
+				margin-top: 50px;
+			}
+			#nav, #legend {
+				float: left;
+				margin-left: 10px;
+			}
+			#legend {
+				margin-top: 12px;
+			}
+			#nav {
+				margin-top: 10px;
+			}
+			#legend span {
+				margin: 0 5px;
+			}
+			.cov0 { color: rgb(192, 0, 0) }
+.cov1 { color: rgb(128, 128, 128) }
+.cov2 { color: rgb(116, 140, 131) }
+.cov3 { color: rgb(104, 152, 134) }
+.cov4 { color: rgb(92, 164, 137) }
+.cov5 { color: rgb(80, 176, 140) }
+.cov6 { color: rgb(68, 188, 143) }
+.cov7 { color: rgb(56, 200, 146) }
+.cov8 { color: rgb(44, 212, 149) }
+.cov9 { color: rgb(32, 224, 152) }
+.cov10 { color: rgb(20, 236, 155) }
+
+		</style>
+	</head>
+	<body>
+		<div id="topbar">
+			<div id="nav">
+				<select id="files">
+				
+				<option value="file0">github.com/helmedeiros/tracer-bullet/cmd/tracer/main.go (0.0%)</option>
+				
+				<option value="file1">github.com/helmedeiros/tracer-bullet/internal/commands/commit.go (0.0%)</option>
+				
+				<option value="file2">github.com/helmedeiros/tracer-bullet/internal/commands/configure.go (58.9%)</option>
+				
+				<option value="file3">github.com/helmedeiros/tracer-bullet/internal/commands/pair.go (0.0%)</option>
+				
+				<option value="file4">github.com/helmedeiros/tracer-bullet/internal/commands/story.go (100.0%)</option>
+				
+				<option value="file5">github.com/helmedeiros/tracer-bullet/internal/config/constants.go (0.0%)</option>
+				
+				<option value="file6">github.com/helmedeiros/tracer-bullet/internal/utils/helpers.go (0.0%)</option>
+				
+				</select>
+			</div>
+			<div id="legend">
+				<span>not tracked</span>
+			
+				<span class="cov0">not covered</span>
+				<span class="cov8">covered</span>
+			
+			</div>
+		</div>
+		<div id="content">
+		
+		<pre class="file" id="file0" style="display: none">package main
+
+import (
+        "fmt"
+        "os"
+
+        "github.com/helmedeiros/tracer-bullet/internal/commands"
+        "github.com/spf13/cobra"
+)
+
+var rootCmd = &amp;cobra.Command{
+        Use:   "tracer",
+        Short: "Tracer Bullet - Agile project tracking tool",
+        Long: `Tracer Bullet is a command-line tool for tracking agile project activities,
+including story management, commits, and pair programming sessions.`,
+}
+
+func init() <span class="cov0" title="0">{
+        // Add commands
+        rootCmd.AddCommand(commands.ConfigureCmd)
+        rootCmd.AddCommand(commands.CommitCmd)
+        rootCmd.AddCommand(commands.PairCmd)
+        rootCmd.AddCommand(commands.StoryCmd)
+}</span>
+
+func main() <span class="cov0" title="0">{
+        if err := rootCmd.Execute(); err != nil </span><span class="cov0" title="0">{
+                fmt.Println(err)
+                os.Exit(1)
+        }</span>
+}
+</pre>
+		
+		<pre class="file" id="file1" style="display: none">package commands
+
+import (
+        "github.com/spf13/cobra"
+)
+
+var CommitCmd = &amp;cobra.Command{
+        Use:   "commit",
+        Short: "Create a commit with story information",
+        Long:  `Create a git commit with associated story information and tracking details.`,
+        Run: func(cmd *cobra.Command, args []string) {<span class="cov0" title="0">
+                // TODO: Implement commit logic
+        }</span>,
+}
+</pre>
+		
+		<pre class="file" id="file2" style="display: none">package commands
+
+import (
+        "fmt"
+        "os"
+        "path/filepath"
+
+        "github.com/helmedeiros/tracer-bullet/internal/config"
+        "github.com/helmedeiros/tracer-bullet/internal/utils"
+        "github.com/spf13/cobra"
+        "gopkg.in/yaml.v3"
+)
+
+var (
+        projectFlag string
+        userFlag    string
+)
+
+var ConfigureCmd = &amp;cobra.Command{
+        Use:   "configure",
+        Short: "Configure tracer settings",
+        Long:  `Configure various settings for the tracer tool, including git repository settings and story tracking preferences.`,
+        RunE: func(cmd *cobra.Command, args []string) error <span class="cov0" title="0">{
+                if projectFlag != "" </span><span class="cov0" title="0">{
+                        if err := configureProject(projectFlag); err != nil </span><span class="cov0" title="0">{
+                                return fmt.Errorf("failed to configure project: %w", err)
+                        }</span>
+                        <span class="cov0" title="0">fmt.Printf("Successfully configured project: %s\n", projectFlag)</span>
+                }
+
+                <span class="cov0" title="0">if userFlag != "" </span><span class="cov0" title="0">{
+                        if err := configureUser(userFlag); err != nil </span><span class="cov0" title="0">{
+                                return fmt.Errorf("failed to configure user: %w", err)
+                        }</span>
+                        <span class="cov0" title="0">fmt.Printf("Successfully configured user: %s\n", userFlag)</span>
+                }
+
+                <span class="cov0" title="0">if projectFlag == "" &amp;&amp; userFlag == "" </span><span class="cov0" title="0">{
+                        return cmd.Help()
+                }</span>
+
+                <span class="cov0" title="0">return nil</span>
+        },
+}
+
+func init() <span class="cov8" title="1">{
+        ConfigureCmd.Flags().StringVarP(&amp;projectFlag, "project", "p", "", "Set the project name")
+        ConfigureCmd.Flags().StringVarP(&amp;userFlag, "user", "u", "", "Set the user name")
+}</span>
+
+func configureProject(projectName string) error <span class="cov8" title="1">{
+        if projectName == "" </span><span class="cov8" title="1">{
+                return fmt.Errorf("project name cannot be empty")
+        }</span>
+
+        // Set git config
+        <span class="cov8" title="1">_, err := utils.RunCommand("git", "config", "--local", "current.project", projectName)
+        if err != nil </span><span class="cov0" title="0">{
+                return fmt.Errorf("failed to set git config: %w", err)
+        }</span>
+
+        // Create config directory if it doesn't exist
+        <span class="cov8" title="1">configDir, err := utils.GetConfigDir()
+        if err != nil </span><span class="cov0" title="0">{
+                return fmt.Errorf("failed to get config directory: %w", err)
+        }</span>
+        <span class="cov8" title="1">if err := utils.EnsureDir(configDir); err != nil </span><span class="cov0" title="0">{
+                return fmt.Errorf("failed to create config directory: %w", err)
+        }</span>
+
+        // Create or update config file
+        <span class="cov8" title="1">cfg := &amp;config.Config{
+                GitRepo:   projectName,
+                GitBranch: config.DefaultGitBranch,
+                GitRemote: config.DefaultGitRemote,
+        }
+
+        data, err := yaml.Marshal(cfg)
+        if err != nil </span><span class="cov0" title="0">{
+                return fmt.Errorf("failed to marshal config: %w", err)
+        }</span>
+
+        <span class="cov8" title="1">configFile := filepath.Join(configDir, config.DefaultConfigFile)
+        if err := os.WriteFile(configFile, data, 0644); err != nil </span><span class="cov0" title="0">{
+                return fmt.Errorf("failed to write config file: %w", err)
+        }</span>
+
+        <span class="cov8" title="1">return nil</span>
+}
+
+func configureUser(username string) error <span class="cov8" title="1">{
+        if username == "" </span><span class="cov8" title="1">{
+                return fmt.Errorf("username cannot be empty")
+        }</span>
+
+        // Get current project name
+        <span class="cov8" title="1">projectName, err := utils.RunCommand("git", "config", "--local", "current.project")
+        if err != nil </span><span class="cov0" title="0">{
+                return fmt.Errorf("failed to get current project: %w", err)
+        }</span>
+
+        // Set git config for user
+        <span class="cov8" title="1">_, err = utils.RunCommand("git", "config", "--local", fmt.Sprintf("%s.user", projectName), username)
+        if err != nil </span><span class="cov0" title="0">{
+                return fmt.Errorf("failed to set git config for user: %w", err)
+        }</span>
+
+        // Update config file
+        <span class="cov8" title="1">configDir, err := utils.GetConfigDir()
+        if err != nil </span><span class="cov0" title="0">{
+                return fmt.Errorf("failed to get config directory: %w", err)
+        }</span>
+
+        <span class="cov8" title="1">configFile := filepath.Join(configDir, config.DefaultConfigFile)
+        data, err := os.ReadFile(configFile)
+        if err != nil </span><span class="cov0" title="0">{
+                return fmt.Errorf("failed to read config file: %w", err)
+        }</span>
+
+        <span class="cov8" title="1">var cfg config.Config
+        if err := yaml.Unmarshal(data, &amp;cfg); err != nil </span><span class="cov0" title="0">{
+                return fmt.Errorf("failed to unmarshal config: %w", err)
+        }</span>
+
+        <span class="cov8" title="1">cfg.AuthorName = username
+
+        data, err = yaml.Marshal(&amp;cfg)
+        if err != nil </span><span class="cov0" title="0">{
+                return fmt.Errorf("failed to marshal config: %w", err)
+        }</span>
+
+        <span class="cov8" title="1">if err := os.WriteFile(configFile, data, 0644); err != nil </span><span class="cov0" title="0">{
+                return fmt.Errorf("failed to write config file: %w", err)
+        }</span>
+
+        <span class="cov8" title="1">return nil</span>
+}
+</pre>
+		
+		<pre class="file" id="file3" style="display: none">package commands
+
+import (
+        "github.com/spf13/cobra"
+)
+
+var PairCmd = &amp;cobra.Command{
+        Use:   "pair",
+        Short: "Manage pair programming sessions",
+        Long:  `Track and manage pair programming sessions, including starting, ending, and switching between pairs.`,
+        Run: func(cmd *cobra.Command, args []string) {<span class="cov0" title="0">
+                // TODO: Implement pair programming session management
+        }</span>,
+}
+</pre>
+		
+		<pre class="file" id="file4" style="display: none">package commands
+
+import (
+        "github.com/spf13/cobra"
+)
+
+var StoryCmd = &amp;cobra.Command{
+        Use:   "story",
+        Short: "Manage stories and their tracking",
+        Long:  `Create and manage stories, track their progress, and view associated commits and changes.`,
+}
+
+var storyNewCmd = &amp;cobra.Command{
+        Use:   "new",
+        Short: "Create a new story",
+        Long:  `Create a new story with title, description, and other metadata.`,
+        Run: func(cmd *cobra.Command, args []string) {<span class="cov0" title="0">
+                // TODO: Implement story creation
+        }</span>,
+}
+
+var storyAfterHashCmd = &amp;cobra.Command{
+        Use:   "after-hash",
+        Short: "Show stories after a specific commit hash",
+        Long:  `Display stories that have been modified after a specific commit hash.`,
+        Run: func(cmd *cobra.Command, args []string) {<span class="cov0" title="0">
+                // TODO: Implement story history after hash
+        }</span>,
+}
+
+var storyByCmd = &amp;cobra.Command{
+        Use:   "by",
+        Short: "Show stories by author",
+        Long:  `Display stories created or modified by a specific author.`,
+        Run: func(cmd *cobra.Command, args []string) {<span class="cov0" title="0">
+                // TODO: Implement story filtering by author
+        }</span>,
+}
+
+var storyFilesCmd = &amp;cobra.Command{
+        Use:   "files",
+        Short: "Show files associated with a story",
+        Long:  `Display all files that have been modified as part of a story.`,
+        Run: func(cmd *cobra.Command, args []string) {<span class="cov0" title="0">
+                // TODO: Implement story files listing
+        }</span>,
+}
+
+var storyCommitsCmd = &amp;cobra.Command{
+        Use:   "commits",
+        Short: "Show commits associated with a story",
+        Long:  `Display all commits that are part of a story's development.`,
+        Run: func(cmd *cobra.Command, args []string) {<span class="cov0" title="0">
+                // TODO: Implement story commits listing
+        }</span>,
+}
+
+var storyDiaryCmd = &amp;cobra.Command{
+        Use:   "diary",
+        Short: "Show story development diary",
+        Long:  `Display a chronological diary of story development activities.`,
+        Run: func(cmd *cobra.Command, args []string) {<span class="cov0" title="0">
+                // TODO: Implement story diary
+        }</span>,
+}
+
+var storyDiffCmd = &amp;cobra.Command{
+        Use:   "diff",
+        Short: "Show story changes",
+        Long:  `Display the changes made as part of a story between two points.`,
+        Run: func(cmd *cobra.Command, args []string) {<span class="cov0" title="0">
+                // TODO: Implement story diff
+        }</span>,
+}
+
+func init() <span class="cov8" title="1">{
+        StoryCmd.AddCommand(storyNewCmd)
+        StoryCmd.AddCommand(storyAfterHashCmd)
+        StoryCmd.AddCommand(storyByCmd)
+        StoryCmd.AddCommand(storyFilesCmd)
+        StoryCmd.AddCommand(storyCommitsCmd)
+        StoryCmd.AddCommand(storyDiaryCmd)
+        StoryCmd.AddCommand(storyDiffCmd)
+}</span>
+</pre>
+		
+		<pre class="file" id="file5" style="display: none">package config
+
+const (
+        // Default configuration paths
+        DefaultConfigDir  = ".tracer"
+        DefaultConfigFile = "config.yaml"
+
+        // Git related constants
+        DefaultGitBranch = "main"
+        DefaultGitRemote = "origin"
+
+        // Story related constants
+        DefaultStoryDir = "stories"
+        DefaultStoryExt = ".md"
+
+        // Pair programming related constants
+        DefaultPairFile = "pair.json"
+)
+
+// Config represents the application configuration
+type Config struct {
+        GitRepo     string `yaml:"git_repo"`
+        GitBranch   string `yaml:"git_branch"`
+        GitRemote   string `yaml:"git_remote"`
+        StoryDir    string `yaml:"story_dir"`
+        PairFile    string `yaml:"pair_file"`
+        AuthorName  string `yaml:"author_name"`
+        AuthorEmail string `yaml:"author_email"`
+}
+
+// DefaultConfig returns a new Config with default values
+func DefaultConfig() *Config <span class="cov0" title="0">{
+        return &amp;Config{
+                GitBranch: DefaultGitBranch,
+                GitRemote: DefaultGitRemote,
+                StoryDir:  DefaultStoryDir,
+                PairFile:  DefaultPairFile,
+        }
+}</span>
+</pre>
+		
+		<pre class="file" id="file6" style="display: none">package utils
+
+import (
+        "fmt"
+        "os"
+        "os/exec"
+        "path/filepath"
+        "strings"
+)
+
+// EnsureDir creates a directory if it doesn't exist
+func EnsureDir(path string) error <span class="cov0" title="0">{
+        if _, err := os.Stat(path); os.IsNotExist(err) </span><span class="cov0" title="0">{
+                return os.MkdirAll(path, 0755)
+        }</span>
+        <span class="cov0" title="0">return nil</span>
+}
+
+// GetHomeDir returns the user's home directory
+func GetHomeDir() (string, error) <span class="cov0" title="0">{
+        home, err := os.UserHomeDir()
+        if err != nil </span><span class="cov0" title="0">{
+                return "", fmt.Errorf("failed to get home directory: %w", err)
+        }</span>
+        <span class="cov0" title="0">return home, nil</span>
+}
+
+// GetConfigDir returns the tracer configuration directory
+func GetConfigDir() (string, error) <span class="cov0" title="0">{
+        home, err := GetHomeDir()
+        if err != nil </span><span class="cov0" title="0">{
+                return "", err
+        }</span>
+        <span class="cov0" title="0">return filepath.Join(home, ".tracer"), nil</span>
+}
+
+// FileExists checks if a file exists
+func FileExists(path string) bool <span class="cov0" title="0">{
+        _, err := os.Stat(path)
+        return !os.IsNotExist(err)
+}</span>
+
+// RunCommand executes a shell command and returns its output
+func RunCommand(command string, args ...string) (string, error) <span class="cov0" title="0">{
+        cmd := exec.Command(command, args...)
+        output, err := cmd.CombinedOutput()
+        if err != nil </span><span class="cov0" title="0">{
+                return "", fmt.Errorf("failed to run command %s: %w", command, err)
+        }</span>
+        <span class="cov0" title="0">return strings.TrimSpace(string(output)), nil</span>
+}
+</pre>
+		
+		</div>
+	</body>
+	<script>
+	(function() {
+		var files = document.getElementById('files');
+		var visible;
+		files.addEventListener('change', onChange, false);
+		function select(part) {
+			if (visible)
+				visible.style.display = 'none';
+			visible = document.getElementById(part);
+			if (!visible)
+				return;
+			files.value = part;
+			visible.style.display = 'block';
+			location.hash = part;
+		}
+		function onChange() {
+			select(files.value);
+			window.scrollTo(0, 0);
+		}
+		if (location.hash != "") {
+			select(location.hash.substr(1));
+		}
+		if (!visible) {
+			select("file0");
+		}
+	})();
+	</script>
+</html>

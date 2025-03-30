@@ -1,0 +1,27 @@
+feat(configure): implement project and user configuration
+
+This commit introduces the first feature of the Go version of tracer-bullet: project and user configuration. The implementation follows Test-Driven Development (TDD) practices and includes:
+
+Core Features:
+- Project configuration with git local config integration
+- User configuration with project-specific settings
+- YAML-based configuration file management
+- Command-line interface with --project and --user flags
+
+Technical Implementation:
+- Modular package structure (cmd, internal/commands, internal/config, internal/utils)
+- Test suite with testify and temporary directory isolation
+- Error handling and user feedback
+- Configuration persistence in ~/.tracer directory
+
+Testing Coverage:
+- Unit tests for both project and user configuration
+- Test environment setup with git repository initialization
+- Configuration file validation
+- Git config verification
+
+The implementation maintains the original shell script functionality while adding:
+- Better error handling and reporting
+- Type-safe configuration management
+- Improved test coverage
+- Modern CLI interface using cobra

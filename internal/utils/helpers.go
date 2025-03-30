@@ -3,7 +3,9 @@ package utils
 import (
 	"fmt"
 	"os"
+	"os/exec"
 	"path/filepath"
+	"strings"
 )
 
 // EnsureDir creates a directory if it doesn't exist
@@ -36,4 +38,14 @@ func GetConfigDir() (string, error) {
 func FileExists(path string) bool {
 	_, err := os.Stat(path)
 	return !os.IsNotExist(err)
+}
+
+// RunCommand executes a shell command and returns its output
+func RunCommand(command string, args ...string) (string, error) {
+	cmd := exec.Command(command, args...)
+	output, err := cmd.CombinedOutput()
+	if err != nil {
+		return "", fmt.Errorf("failed to run command %s: %w", command, err)
+	}
+	return strings.TrimSpace(string(output)), nil
 }

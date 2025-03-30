@@ -11,8 +11,9 @@ tracer
 
 # Output of the go coverage tool, specifically when used with LiteIDE
 *.out
+coverage.html
 
-# Dependency directories to remove from the vendor directory
+# Dependency directories
 vendor/
 
 # Go workspace file
@@ -32,3 +33,7 @@ go.work
 .Trashes
 ehthumbs.db
 Thumbs.db
+
+# Application specific files
+config.yaml
+*.tmp

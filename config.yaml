@@ -1,0 +1,7 @@
+git_repo: test-project
+git_branch: main
+git_remote: origin
+story_dir: ""
+pair_file: ""
+author_name: john.doe
+author_email: ""
