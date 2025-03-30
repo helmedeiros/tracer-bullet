@@ -1,4 +1,4 @@
-.PHONY: test test-coverage build clean lint
+.PHONY: test test-coverage build clean lint pre-push
 
 # Build the tracer binary
 build:
@@ -29,3 +29,6 @@ dev-deps:
 
 # Run all checks (lint + test)
 check: lint test
+
+# Run pre-push checks
+pre-push: check
