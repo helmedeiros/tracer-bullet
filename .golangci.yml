@@ -1,8 +1,18 @@
 run:
   timeout: 5m
   tests: true
-  skip-dirs:
+
+issues:
+  exclude-dirs:
     - vendor/
+  exclude-rules:
+    - path: _test\.go
+      linters:
+        - gocyclo
+        - gosec
+        - mnd
+        - gocognit
+        - goconst
 
 linters:
   enable:
@@ -21,7 +31,7 @@ linters:
     - revive
     - gocognit
     - goconst
-    - gomnd
+    - mnd
     - gomoddirectives
     - gomodguard
 
@@ -30,7 +40,7 @@ linters-settings:
     min-complexity: 15
   gocognit:
     min-complexity: 15
-  gomnd:
+  mnd:
     settings:
       mnd:
         checks: assignment,argument,return
@@ -39,13 +49,3 @@ linters-settings:
       - name: exported
         arguments:
           - disableStutteringCheck
-
-issues:
-  exclude-rules:
-    - path: _test\.go
-      linters:
-        - gocyclo
-        - gosec
-        - gomnd
-        - gocognit
-        - goconst

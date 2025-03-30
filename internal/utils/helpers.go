@@ -8,10 +8,17 @@ import (
 	"strings"
 )
 
+const (
+	// DefaultDirPerm is the default permission for directories
+	DefaultDirPerm = 0755
+	// DefaultFilePerm is the default permission for files
+	DefaultFilePerm = 0600
+)
+
 // EnsureDir creates a directory if it doesn't exist
 func EnsureDir(path string) error {
 	if _, err := os.Stat(path); os.IsNotExist(err) {
-		return os.MkdirAll(path, 0755)
+		return os.MkdirAll(path, DefaultDirPerm)
 	}
 	return nil
 }

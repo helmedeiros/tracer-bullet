@@ -32,8 +32,11 @@ func setupTestEnvironment(t *testing.T) (string, string) {
 
 func TestConfigureProject(t *testing.T) {
 	tmpDir, originalDir := setupTestEnvironment(t)
-	defer os.RemoveAll(tmpDir)
-	defer os.Chdir(originalDir)
+	defer func() {
+		err := os.Chdir(originalDir)
+		require.NoError(t, err)
+		os.RemoveAll(tmpDir)
+	}()
 
 	tests := []struct {
 		name           string
@@ -94,8 +97,11 @@ func TestConfigureProject(t *testing.T) {
 
 func TestConfigureUser(t *testing.T) {
 	tmpDir, originalDir := setupTestEnvironment(t)
-	defer os.RemoveAll(tmpDir)
-	defer os.Chdir(originalDir)
+	defer func() {
+		err := os.Chdir(originalDir)
+		require.NoError(t, err)
+		os.RemoveAll(tmpDir)
+	}()
 
 	// First configure a project (required for user configuration)
 	err := configureProject("test-project")

@@ -81,7 +81,7 @@ func configureProject(projectName string) error {
 	}
 
 	configFile := filepath.Join(configDir, config.DefaultConfigFile)
-	if err := os.WriteFile(configFile, data, 0644); err != nil {
+	if err := os.WriteFile(configFile, data, utils.DefaultFilePerm); err != nil {
 		return fmt.Errorf("failed to write config file: %w", err)
 	}
 
@@ -129,7 +129,7 @@ func configureUser(username string) error {
 		return fmt.Errorf("failed to marshal config: %w", err)
 	}
 
-	if err := os.WriteFile(configFile, data, 0644); err != nil {
+	if err := os.WriteFile(configFile, data, utils.DefaultFilePerm); err != nil {
 		return fmt.Errorf("failed to write config file: %w", err)
 	}
 

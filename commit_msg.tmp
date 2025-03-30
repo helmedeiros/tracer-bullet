@@ -1,27 +1,14 @@
-feat(configure): implement project and user configuration
+refactor: fix linting issues and improve file permissions
 
-This commit introduces the first feature of the Go version of tracer-bullet: project and user configuration. The implementation follows Test-Driven Development (TDD) practices and includes:
+This commit:
+- Adds proper error handling for os.Chdir in tests
+- Introduces file permission constants in utils package
+- Updates file permissions to be more secure (0600 for files)
+- Fixes golangci-lint configuration
+- Removes deprecated linter (gomnd) in favor of mnd
 
-Core Features:
-- Project configuration with git local config integration
-- User configuration with project-specific settings
-- YAML-based configuration file management
-- Command-line interface with --project and --user flags
-
-Technical Implementation:
-- Modular package structure (cmd, internal/commands, internal/config, internal/utils)
-- Test suite with testify and temporary directory isolation
-- Error handling and user feedback
-- Configuration persistence in ~/.tracer directory
-
-Testing Coverage:
-- Unit tests for both project and user configuration
-- Test environment setup with git repository initialization
-- Configuration file validation
-- Git config verification
-
-The implementation maintains the original shell script functionality while adding:
-- Better error handling and reporting
-- Type-safe configuration management
-- Improved test coverage
-- Modern CLI interface using cobra
+These changes improve:
+- Code safety with proper error handling
+- Security with stricter file permissions
+- Code maintainability with consistent permission constants
+- Development workflow with working pre-push checks
