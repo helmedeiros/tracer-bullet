@@ -7,7 +7,7 @@ on:
     branches: [main, v1-go]
 
 jobs:
-  test:
+  run-tests:
     name: Run Tests
     runs-on: ubuntu-latest
     steps:
@@ -25,7 +25,8 @@ jobs:
       - name: Run tests
         run: go test -v ./...
 
+      - name: Install golangci-lint
+        run: curl -sSfL https://raw.githubusercontent.com/golangci/golangci-lint/master/install.sh | sh -s -- -b $(go env GOPATH)/bin v1.64.8
+
       - name: Run linter
-        run: |
-          curl -sSfL https://raw.githubusercontent.com/golangci/golangci-lint/master/install.sh | sh -s -- -b $(go env GOPATH)/bin v1.55.2
-          golangci-lint run
+        run: golangci-lint run
