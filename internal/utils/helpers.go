@@ -1,0 +1,39 @@
+package utils
+
+import (
+	"fmt"
+	"os"
+	"path/filepath"
+)
+
+// EnsureDir creates a directory if it doesn't exist
+func EnsureDir(path string) error {
+	if _, err := os.Stat(path); os.IsNotExist(err) {
+		return os.MkdirAll(path, 0755)
+	}
+	return nil
+}
+
+// GetHomeDir returns the user's home directory
+func GetHomeDir() (string, error) {
+	home, err := os.UserHomeDir()
+	if err != nil {
+		return "", fmt.Errorf("failed to get home directory: %w", err)
+	}
+	return home, nil
+}
+
+// GetConfigDir returns the tracer configuration directory
+func GetConfigDir() (string, error) {
+	home, err := GetHomeDir()
+	if err != nil {
+		return "", err
+	}
+	return filepath.Join(home, ".tracer"), nil
+}
+
+// FileExists checks if a file exists
+func FileExists(path string) bool {
+	_, err := os.Stat(path)
+	return !os.IsNotExist(err)
+}

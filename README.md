@@ -1,50 +1,81 @@
-tracer-bullet
-===
+# Tracer Bullet
 
-Shell script project to deal with day-by-day agile projects tracing activities.
+A Go-based command-line tool for tracking agile project activities, including story management, commits, and pair programming sessions.
 
 ![Example](.github/tracer_example.gif)
 
-Installation
-------------
+## Installation
 
-### OS X
+### Prerequisites
 
-`tracer` is built for the Mac.
+- Go 1.16 or later
+- Git
 
-### Setup
+### Building from Source
 
-`tracer` has some parts, but I've tried to simplify installation - as much as I could!
+1. Clone the repository:
 
-##### 1 Clone down the repository:
-
-```
-http://github.com/helmedeiros/tracer-bullet.git
-```
-
-##### 2	Make the command executable:
-
-```
-chmod +x tracer
+```bash
+git clone https://github.com/helmedeiros/tracer-bullet.git
+cd tracer-bullet
 ```
 
-##### 3	Add the address from where you've cloned the project to your `.bashrc` or `.zshrc` file's PATH variable. Here's how mine looks
+2. Build the project:
 
-```
-export PATH=${PATH}:/Users/guest/Projects/tracer/
-```
-
-##### 4 Make sure you reload your shell with
-
-```
-source ~/.bashrc
-source ~/.zshrc
+```bash
+go build -o tracer cmd/tracer/main.go
 ```
 
-### Starting It Up
+3. Move the binary to your PATH:
 
-Open a new terminal and type the following line:
+```bash
+sudo mv tracer /usr/local/bin/
+```
 
+### Using Go Install
+
+```bash
+go install github.com/helmedeiros/tracer-bullet/cmd/tracer@latest
 ```
-tracer  --help
+
+## Usage
+
+After installation, you can use the `tracer` command:
+
+```bash
+tracer --help
 ```
+
+### Available Commands
+
+- `configure`: Configure tracer settings
+- `commit`: Create a commit with story information
+- `pair`: Manage pair programming sessions
+- `story`: Manage stories and their tracking
+  - `new`: Create a new story
+  - `after-hash`: Show stories after a specific commit hash
+  - `by`: Show stories by author
+  - `files`: Show files associated with a story
+  - `commits`: Show commits associated with a story
+  - `diary`: Show story development diary
+  - `diff`: Show story changes
+
+## Configuration
+
+The tool creates a configuration directory at `~/.tracer` where it stores:
+
+- Configuration file (`config.yaml`)
+- Story files
+- Pair programming session data
+
+## Contributing
+
+1. Fork the repository
+2. Create your feature branch (`git checkout -b feature/amazing-feature`)
+3. Commit your changes (`git commit -m 'Add some amazing feature'`)
+4. Push to the branch (`git push origin feature/amazing-feature`)
+5. Open a Pull Request
+
+## License
+
+This project is licensed under the MIT License - see the LICENSE file for details.
