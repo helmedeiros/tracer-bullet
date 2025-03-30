@@ -12,3 +12,13 @@ These changes improve:
 - Security with stricter file permissions
 - Code maintainability with consistent permission constants
 - Development workflow with working pre-push checks
+
+fix: update golangci-lint configuration for CI
+
+This commit fixes the CI build by:
+- Replacing 'mnd' linter with 'gomnd' in configuration
+- Keeping the same linting rules and settings
+- Ensuring compatibility with GitHub Actions environment
+
+The change addresses the CI error:
+"unknown linters: 'mnd', run 'golangci-lint help linters'"
