@@ -65,3 +65,30 @@ func GenerateID() string {
 	rand.Read(b)
 	return base64.URLEncoding.EncodeToString(b)[:8]
 }
+
+// RunGitInit initializes a new git repository in the current directory
+func RunGitInit() error {
+	_, err := RunCommand("git", "init")
+	if err != nil {
+		return fmt.Errorf("failed to initialize git repository: %w", err)
+	}
+
+	// Configure git user for tests
+	if err := RunGitConfig("user.name", "Test User"); err != nil {
+		return err
+	}
+	if err := RunGitConfig("user.email", "test@example.com"); err != nil {
+		return err
+	}
+
+	return nil
+}
+
+// RunGitConfig sets a git configuration value
+func RunGitConfig(key, value string) error {
+	_, err := RunCommand("git", "config", "--local", key, value)
+	if err != nil {
+		return fmt.Errorf("failed to set git config %s: %w", key, err)
+	}
+	return nil
+}
