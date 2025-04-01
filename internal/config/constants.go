@@ -23,6 +23,11 @@ const (
 
 	// Pair programming related constants
 	DefaultPairFile = "pair.json"
+
+	// Jira related constants
+	DefaultJiraHost      = "" // Must be configured by user
+	DefaultJiraProject   = "" // Must be configured by user
+	DefaultJiraIssueType = "Story"
 )
 
 // Config represents the application configuration
@@ -35,6 +40,10 @@ type Config struct {
 	AuthorName  string `yaml:"author_name"`
 	AuthorEmail string `yaml:"author_email"`
 	PairName    string `yaml:"pair_name"`
+	JiraHost    string `yaml:"jira_host"`
+	JiraToken   string `yaml:"jira_token"`
+	JiraProject string `yaml:"jira_project"`
+	JiraUser    string `yaml:"jira_user"`
 }
 
 // DefaultConfig returns a new Config with default values

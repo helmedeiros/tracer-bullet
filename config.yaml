@@ -1,8 +1,12 @@
 git_repo: test-project
 git_branch: main
 git_remote: origin
-story_dir: /var/folders/zy/rtw59dpj6x95f3g4xzx5j08c0000gp/T/tracer-test-1222371880/stories
+story_dir: /var/folders/zy/rtw59dpj6x95f3g4xzx5j08c0000gp/T/tracer-test-1595610581/stories
 pair_file: ""
 author_name: john.doe
 author_email: ""
 pair_name: ""
+jira_host: ""
+jira_token: ""
+jira_project: ""
+jira_user: ""
