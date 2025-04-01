@@ -1,7 +1,7 @@
 git_repo: test-project
 git_branch: main
 git_remote: origin
-story_dir: /var/folders/zy/rtw59dpj6x95f3g4xzx5j08c0000gp/T/tracer-test-3051630196/stories
+story_dir: ""
 pair_file: ""
 author_name: john.doe
 author_email: ""

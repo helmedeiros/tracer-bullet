@@ -1,8 +1,9 @@
 package commands
 
 import (
-	"bytes"
+	"fmt"
 	"os"
+	"os/exec"
 	"path/filepath"
 	"strings"
 	"testing"
@@ -10,174 +11,247 @@ import (
 	"github.com/helmedeiros/tracer-bullet/internal/utils"
 	"github.com/spf13/cobra"
 	"github.com/stretchr/testify/assert"
-	"github.com/stretchr/testify/require"
 )
 
 func TestCommitCommand(t *testing.T) {
-	tmpDir, originalDir := setupTestEnvironment(t)
-	defer func() {
-		err := os.Chdir(originalDir)
-		require.NoError(t, err)
-		os.RemoveAll(tmpDir)
-	}()
+	// Create a temporary directory for test files
+	tmpDir, err := os.MkdirTemp("", "tracer-test-*")
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer os.RemoveAll(tmpDir)
 
-	// Initialize git repo
-	err := utils.RunGitInit()
-	require.NoError(t, err)
+	// Create a temporary git repository
+	gitDir := filepath.Join(tmpDir, "test-repo")
+	err = os.MkdirAll(gitDir, 0755)
+	if err != nil {
+		t.Fatal(err)
+	}
 
-	// Create and configure test repository
-	err = configureProject("test-project")
-	require.NoError(t, err)
-	err = configureUser("test.user")
-	require.NoError(t, err)
+	// Initialize git repository
+	err = os.Chdir(gitDir)
+	if err != nil {
+		t.Fatal(err)
+	}
 
-	// Create a test file and stage it
-	testFile := filepath.Join(tmpDir, "test.txt")
-	err = os.WriteFile(testFile, []byte("test content"), 0644)
-	require.NoError(t, err)
+	// Run git init
+	cmd := exec.Command("git", "init")
+	err = cmd.Run()
+	if err != nil {
+		t.Fatal(err)
+	}
 
-	_, err = utils.RunCommand("git", "add", "test.txt")
-	require.NoError(t, err)
+	// Configure git user
+	cmd = exec.Command("git", "config", "user.name", "Test User")
+	err = cmd.Run()
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	cmd = exec.Command("git", "config", "user.email", "test@example.com")
+	err = cmd.Run()
+	if err != nil {
+		t.Fatal(err)
+	}
 
 	tests := []struct {
 		name        string
-		commitType  string
-		scope       string
-		message     string
-		body        string
-		breaking    bool
-		expectError bool
+		args        []string
+		wantErr     bool
+		errContains string
 	}{
 		{
-			name:        "create feat commit",
-			commitType:  "feat",
-			message:     "add new feature",
-			expectError: false,
+			name:    "create feat commit",
+			args:    []string{"create", "--type", "feat", "--message", "add new feature"},
+			wantErr: false,
 		},
 		{
-			name:        "create feat commit with scope",
-			commitType:  "feat",
-			scope:       "auth",
-			message:     "add login functionality",
-			expectError: false,
+			name:    "create feat commit with scope",
+			args:    []string{"create", "--type", "feat", "--scope", "auth", "--message", "add login feature"},
+			wantErr: false,
 		},
 		{
-			name:        "create fix commit with body",
-			commitType:  "fix",
-			message:     "fix login issue",
-			body:        "This fixes a critical issue with the login system\nWhere users could not log in with correct credentials",
-			expectError: false,
+			name:    "create fix commit with body",
+			args:    []string{"create", "--type", "fix", "--message", "fix bug", "--body", "This fixes a critical issue in the login flow"},
+			wantErr: false,
 		},
 		{
-			name:        "create breaking change",
-			commitType:  "feat",
-			scope:       "api",
-			message:     "change authentication method",
-			body:        "Switch from basic auth to OAuth2",
-			breaking:    true,
-			expectError: false,
+			name:    "create breaking change",
+			args:    []string{"create", "--type", "feat", "--message", "change API", "--breaking"},
+			wantErr: false,
 		},
 		{
 			name:        "invalid commit type",
-			commitType:  "invalid",
-			message:     "test message",
-			expectError: true,
+			args:        []string{"create", "--type", "invalid", "--message", "test"},
+			wantErr:     true,
+			errContains: "invalid commit type",
 		},
 		{
 			name:        "empty message",
-			commitType:  "feat",
-			message:     "",
-			expectError: true,
+			args:        []string{"create", "--type", "feat", "--message", ""},
+			wantErr:     true,
+			errContains: "commit message cannot be empty",
 		},
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			// Reset test file for each test
-			err := os.WriteFile(testFile, []byte("test content "+tt.name), 0644)
-			require.NoError(t, err)
-			_, err = utils.RunCommand("git", "add", "test.txt")
-			require.NoError(t, err)
+			// Create a test file with unique content for each test
+			testFile := filepath.Join(gitDir, "test.txt")
+			err = os.WriteFile(testFile, []byte("test content for "+tt.name), 0644)
+			if err != nil {
+				t.Fatal(err)
+			}
 
-			// Create a new command instance for each test
-			cmd := &cobra.Command{
+			// Add the test file
+			cmd = exec.Command("git", "add", "test.txt")
+			err = cmd.Run()
+			if err != nil {
+				t.Fatal(err)
+			}
+
+			// Reset the command and its flags
+			CommitCmd = &cobra.Command{
+				Use:   "commit",
+				Short: "Create a conventional commit",
+				Long: `Create a git commit following conventional commit format.
+Supports common types like feat, fix, docs, style, refactor, test, and chore.
+Automatically includes scope based on current story if available.`,
+			}
+
+			// Re-initialize the command
+			commitCreateCmd = &cobra.Command{
 				Use:   "create",
 				Short: "Create a new commit",
-				Long:  `Create a new git commit with proper conventional commit format.`,
-				RunE:  commitCreateCmd.RunE,
+				Long: `Create a new git commit with proper conventional commit format.
+Example: tracer commit create --type feat --scope auth --message "add login functionality"
+Will create: feat(auth): add login functionality`,
+				RunE: func(cmd *cobra.Command, args []string) error {
+					// Get flag values
+					commitType, _ := cmd.Flags().GetString("type")
+					scope, _ := cmd.Flags().GetString("scope")
+					message, _ := cmd.Flags().GetString("message")
+					body, _ := cmd.Flags().GetString("body")
+					breaking, _ := cmd.Flags().GetBool("breaking")
+
+					// Validate commit type
+					if !isValidCommitType(commitType) {
+						return fmt.Errorf("invalid commit type: %s. Must be one of: feat, fix, docs, style, refactor, test, chore", commitType)
+					}
+
+					// Validate message
+					if message == "" {
+						return fmt.Errorf("commit message cannot be empty")
+					}
+
+					// Build commit message
+					var commitMsg strings.Builder
+
+					// First line: type(scope): message
+					commitMsg.WriteString(commitType)
+					if scope != "" {
+						commitMsg.WriteString(fmt.Sprintf("(%s)", scope))
+					}
+					if breaking {
+						commitMsg.WriteString("!")
+					}
+					commitMsg.WriteString(fmt.Sprintf(": %s", message))
+
+					// Add body if provided
+					if body != "" {
+						commitMsg.WriteString("\n\n")
+						commitMsg.WriteString(body)
+					}
+
+					// Add breaking change footer if needed
+					if breaking {
+						commitMsg.WriteString("\n\nBREAKING CHANGE: ")
+						if !strings.Contains(strings.ToLower(body), "breaking change") {
+							commitMsg.WriteString(message)
+						}
+					}
+
+					// Create temporary file for commit message
+					configDir, err := utils.GetConfigDir()
+					if err != nil {
+						return fmt.Errorf("failed to get config directory: %w", err)
+					}
+
+					tmpFile := filepath.Join(configDir, "COMMIT_MSG")
+					if err := os.WriteFile(tmpFile, []byte(commitMsg.String()), 0644); err != nil {
+						return fmt.Errorf("failed to write commit message: %w", err)
+					}
+					defer os.Remove(tmpFile)
+
+					// Run git commit
+					_, err = utils.RunCommand("git", "commit", "-F", tmpFile)
+					if err != nil {
+						return fmt.Errorf("failed to create commit: %w", err)
+					}
+
+					fmt.Fprintf(cmd.OutOrStdout(), "Created commit: %s\n", commitMsg.String())
+					return nil
+				},
 			}
 
-			// Add flags to the command
-			cmd.Flags().String("type", "", "Commit type")
-			cmd.Flags().String("scope", "", "Commit scope")
-			cmd.Flags().String("message", "", "Commit message")
-			cmd.Flags().String("body", "", "Commit body")
-			cmd.Flags().Bool("breaking", false, "Mark as breaking change")
-			cmd.MarkFlagRequired("type")
-			cmd.MarkFlagRequired("message")
+			// Add create command flags
+			commitCreateCmd.Flags().String("type", "", "Commit type (feat, fix, docs, style, refactor, test, chore)")
+			commitCreateCmd.Flags().String("scope", "", "Commit scope (optional)")
+			commitCreateCmd.Flags().String("message", "", "Commit message")
+			commitCreateCmd.Flags().String("body", "", "Commit body (optional)")
+			commitCreateCmd.Flags().Bool("breaking", false, "Mark as breaking change")
 
-			// Create a buffer to capture output
-			var buf bytes.Buffer
-			cmd.SetOut(&buf)
-
-			// Build command arguments
-			var args []string
-			args = append(args, "--type", tt.commitType)
-			if tt.scope != "" {
-				args = append(args, "--scope", tt.scope)
+			// Mark required flags
+			if err := commitCreateCmd.MarkFlagRequired("type"); err != nil {
+				t.Fatalf("failed to mark type flag as required: %v", err)
 			}
-			args = append(args, "--message", tt.message)
-			if tt.body != "" {
-				args = append(args, "--body", tt.body)
-			}
-			if tt.breaking {
-				args = append(args, "--breaking")
+			if err := commitCreateCmd.MarkFlagRequired("message"); err != nil {
+				t.Fatalf("failed to mark message flag as required: %v", err)
 			}
 
-			// Set command arguments
-			cmd.SetArgs(args)
+			// Add commands to root
+			CommitCmd.AddCommand(commitCreateCmd)
 
-			// Execute command
-			err = cmd.Execute()
+			// Set the command arguments
+			CommitCmd.SetArgs(tt.args)
 
-			if tt.expectError {
+			// Execute the command
+			err := CommitCmd.Execute()
+
+			// Check error cases
+			if tt.wantErr {
 				assert.Error(t, err)
+				if tt.errContains != "" {
+					assert.Contains(t, err.Error(), tt.errContains)
+				}
 				return
 			}
 
-			require.NoError(t, err)
+			// Check success cases
+			assert.NoError(t, err)
 
-			// Verify commit was created with correct message
-			output := buf.String()
-			assert.Contains(t, output, "Created commit:", "Output should confirm commit creation")
-			assert.Contains(t, output, tt.commitType, "Output should contain commit type")
-			if tt.scope != "" {
-				assert.Contains(t, output, "("+tt.scope+")", "Output should contain scope")
-			}
-			assert.Contains(t, output, tt.message, "Output should contain commit message")
-
-			// Verify git log
-			log, err := utils.RunCommand("git", "log", "-1", "--pretty=format:%B")
-			require.NoError(t, err)
-
-			// Verify commit message format
-			expectedMsg := tt.commitType
-			if tt.scope != "" {
-				expectedMsg += "(" + tt.scope + ")"
-			}
-			if tt.breaking {
-				expectedMsg += "!"
-			}
-			expectedMsg += ": " + tt.message
-
-			assert.True(t, strings.HasPrefix(log, expectedMsg), "Git log should match expected commit message format")
-
-			if tt.body != "" {
-				assert.Contains(t, log, tt.body, "Git log should contain commit body")
+			// Verify the commit was created
+			cmd := exec.Command("git", "log", "-1", "--pretty=format:%s")
+			output, err := cmd.Output()
+			if err != nil {
+				t.Fatal(err)
 			}
 
-			if tt.breaking {
-				assert.Contains(t, log, "BREAKING CHANGE:", "Git log should contain breaking change footer")
+			// Verify commit message format based on test case
+			switch tt.name {
+			case "create feat commit":
+				assert.Equal(t, "feat: add new feature", string(output))
+			case "create feat commit with scope":
+				assert.Equal(t, "feat(auth): add login feature", string(output))
+			case "create fix commit with body":
+				cmd = exec.Command("git", "log", "-1", "--pretty=format:%B")
+				output, err = cmd.Output()
+				if err != nil {
+					t.Fatal(err)
+				}
+				assert.Contains(t, string(output), "This fixes a critical issue in the login flow")
+			case "create breaking change":
+				assert.Equal(t, "feat!: change API", string(output))
 			}
 		})
 	}

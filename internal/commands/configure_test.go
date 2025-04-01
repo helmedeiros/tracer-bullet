@@ -12,31 +12,9 @@ import (
 	"gopkg.in/yaml.v3"
 )
 
-func setupTestEnvironment(t *testing.T) (string, string) {
-	// Create a temporary directory for testing
-	tmpDir, err := os.MkdirTemp("", "tracer-test-*")
-	require.NoError(t, err)
-
-	// Change to the temporary directory
-	originalDir, err := os.Getwd()
-	require.NoError(t, err)
-	err = os.Chdir(tmpDir)
-	require.NoError(t, err)
-
-	// Initialize git repository
-	_, err = utils.RunCommand("git", "init")
-	require.NoError(t, err)
-
-	return tmpDir, originalDir
-}
-
 func TestConfigureProject(t *testing.T) {
-	tmpDir, originalDir := setupTestEnvironment(t)
-	defer func() {
-		err := os.Chdir(originalDir)
-		require.NoError(t, err)
-		os.RemoveAll(tmpDir)
-	}()
+	tmpDir, _, originalDir := setupTestEnvironment(t)
+	defer cleanupTestEnvironment(t, tmpDir, originalDir)
 
 	tests := []struct {
 		name           string
@@ -77,9 +55,7 @@ func TestConfigureProject(t *testing.T) {
 			assert.Equal(t, tt.projectName, projectName)
 
 			// Verify config file
-			configDir, err := utils.GetConfigDir()
-			require.NoError(t, err)
-			configFile := filepath.Join(configDir, config.DefaultConfigFile)
+			configFile := filepath.Join(utils.TestConfigDir, config.DefaultConfigFile)
 			require.FileExists(t, configFile)
 
 			// Read and verify config file contents
@@ -96,12 +72,8 @@ func TestConfigureProject(t *testing.T) {
 }
 
 func TestConfigureUser(t *testing.T) {
-	tmpDir, originalDir := setupTestEnvironment(t)
-	defer func() {
-		err := os.Chdir(originalDir)
-		require.NoError(t, err)
-		os.RemoveAll(tmpDir)
-	}()
+	tmpDir, _, originalDir := setupTestEnvironment(t)
+	defer cleanupTestEnvironment(t, tmpDir, originalDir)
 
 	// First configure a project (required for user configuration)
 	err := configureProject("test-project")
@@ -140,9 +112,7 @@ func TestConfigureUser(t *testing.T) {
 			assert.Equal(t, tt.username, username)
 
 			// Verify config file
-			configDir, err := utils.GetConfigDir()
-			require.NoError(t, err)
-			configFile := filepath.Join(configDir, config.DefaultConfigFile)
+			configFile := filepath.Join(utils.TestConfigDir, config.DefaultConfigFile)
 			require.FileExists(t, configFile)
 
 			// Read and verify config file contents

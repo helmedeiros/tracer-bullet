@@ -105,12 +105,16 @@ func configureUser(username string) error {
 		return fmt.Errorf("failed to set git config for user: %w", err)
 	}
 
-	// Update config file
+	// Create config directory if it doesn't exist
 	configDir, err := utils.GetConfigDir()
 	if err != nil {
 		return fmt.Errorf("failed to get config directory: %w", err)
 	}
+	if err := utils.EnsureDir(configDir); err != nil {
+		return fmt.Errorf("failed to create config directory: %w", err)
+	}
 
+	// Update config file
 	configFile := filepath.Join(configDir, config.DefaultConfigFile)
 	data, err := os.ReadFile(configFile)
 	if err != nil {

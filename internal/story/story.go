@@ -53,7 +53,7 @@ func (s *Story) Save() error {
 	}
 
 	// Create story directory if it doesn't exist
-	storyDir := filepath.Join(cfg.StoryDir)
+	storyDir := cfg.StoryDir
 	if err := os.MkdirAll(storyDir, utils.DefaultDirPerm); err != nil {
 		return fmt.Errorf("failed to create story directory: %w", err)
 	}

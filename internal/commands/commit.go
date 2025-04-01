@@ -76,7 +76,7 @@ Will create: feat(auth): add login functionality`,
 		}
 
 		tmpFile := filepath.Join(configDir, "COMMIT_MSG")
-		if err := os.WriteFile(tmpFile, []byte(commitMsg.String()), 0644); err != nil {
+		if err := os.WriteFile(tmpFile, []byte(commitMsg.String()), 0600); err != nil {
 			return fmt.Errorf("failed to write commit message: %w", err)
 		}
 		defer os.Remove(tmpFile)
@@ -93,19 +93,20 @@ Will create: feat(auth): add login functionality`,
 }
 
 func init() {
-	// Add create command flags
+	CommitCmd.AddCommand(commitCreateCmd)
+
 	commitCreateCmd.Flags().String("type", "", "Commit type (feat, fix, docs, style, refactor, test, chore)")
-	commitCreateCmd.Flags().String("scope", "", "Commit scope (optional)")
 	commitCreateCmd.Flags().String("message", "", "Commit message")
+	commitCreateCmd.Flags().String("scope", "", "Commit scope (optional)")
 	commitCreateCmd.Flags().String("body", "", "Commit body (optional)")
 	commitCreateCmd.Flags().Bool("breaking", false, "Mark as breaking change")
 
-	// Mark required flags
-	commitCreateCmd.MarkFlagRequired("type")
-	commitCreateCmd.MarkFlagRequired("message")
-
-	// Add commands to root
-	CommitCmd.AddCommand(commitCreateCmd)
+	if err := commitCreateCmd.MarkFlagRequired("type"); err != nil {
+		panic(fmt.Sprintf("failed to mark type flag as required: %v", err))
+	}
+	if err := commitCreateCmd.MarkFlagRequired("message"); err != nil {
+		panic(fmt.Sprintf("failed to mark message flag as required: %v", err))
+	}
 }
 
 func isValidCommitType(commitType string) bool {

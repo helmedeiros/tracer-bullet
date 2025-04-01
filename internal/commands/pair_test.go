@@ -1,7 +1,6 @@
 package commands
 
 import (
-	"os"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -9,71 +8,67 @@ import (
 )
 
 func TestPairCommand(t *testing.T) {
-	tmpDir, originalDir := setupTestEnvironment(t)
-	defer func() {
-		err := os.Chdir(originalDir)
-		require.NoError(t, err)
-		os.RemoveAll(tmpDir)
-	}()
+	tmpDir, _, originalDir := setupTestEnvironment(t)
+	defer cleanupTestEnvironment(t, tmpDir, originalDir)
 
-	// First configure a project and user (required for pair command)
+	// First configure a project and user (required for pair configuration)
 	err := configureProject("test-project")
 	require.NoError(t, err)
 	err = configureUser("john.doe")
 	require.NoError(t, err)
 
 	tests := []struct {
-		name           string
-		args           []string
-		expectError    bool
-		expectedOutput string
+		name       string
+		args       []string
+		wantErr    bool
+		errMessage string
+		wantOutput string
 	}{
 		{
-			name:           "start pair session with valid partner",
-			args:           []string{"start", "jane.doe"},
-			expectError:    false,
-			expectedOutput: "Started pair programming session with jane.doe\n",
+			name:       "start with valid partner",
+			args:       []string{"start", "jane.doe"},
+			wantErr:    false,
+			wantOutput: "Started pair programming session with jane.doe\n",
 		},
 		{
-			name:           "start pair session with empty partner",
-			args:           []string{"start", ""},
-			expectError:    true,
-			expectedOutput: "",
+			name:       "start with empty partner",
+			args:       []string{"start"},
+			wantErr:    true,
+			errMessage: "partner name is required",
 		},
 		{
-			name:           "start pair session without partner",
-			args:           []string{"start"},
-			expectError:    true,
-			expectedOutput: "",
+			name:       "stop pair",
+			args:       []string{"stop"},
+			wantErr:    false,
+			wantOutput: "Stopped pair programming session\n",
 		},
 		{
-			name:           "stop pair session",
-			args:           []string{"stop"},
-			expectError:    false,
-			expectedOutput: "Stopped pair programming session\n",
+			name:       "show status",
+			args:       []string{"status"},
+			wantErr:    false,
+			wantOutput: "No active pair programming session\n",
 		},
 		{
-			name:           "show pair status",
-			args:           []string{"status"},
-			expectError:    false,
-			expectedOutput: "No active pair programming session\n",
-		},
-		{
-			name:           "invalid command",
-			args:           []string{"invalid"},
-			expectError:    true,
-			expectedOutput: "",
+			name:       "invalid command",
+			args:       []string{"invalid"},
+			wantErr:    true,
+			errMessage: "unknown command: invalid",
 		},
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
+			outputBuffer.Reset()
 			err := PairCmd.RunE(PairCmd, tt.args)
-			if tt.expectError {
+
+			if tt.wantErr {
 				assert.Error(t, err)
+				if tt.errMessage != "" {
+					assert.Equal(t, tt.errMessage, err.Error())
+				}
 			} else {
 				assert.NoError(t, err)
-				assert.Equal(t, tt.expectedOutput, GetOutput())
+				assert.Equal(t, tt.wantOutput, GetOutput())
 			}
 		})
 	}

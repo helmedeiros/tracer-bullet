@@ -30,10 +30,13 @@ var jiraConfigureCmd = &cobra.Command{
 		project, _ := cmd.Flags().GetString("project")
 		user, _ := cmd.Flags().GetString("user")
 
-		// Update config with new values if provided
-		if host != "" {
-			cfg.JiraHost = host
+		// Validate host parameter
+		if host == "" {
+			return fmt.Errorf("host cannot be empty")
 		}
+
+		// Update config with new values if provided
+		cfg.JiraHost = host
 		if token != "" {
 			cfg.JiraToken = token
 		}
@@ -95,34 +98,42 @@ var jiraLinkCmd = &cobra.Command{
 }
 
 func init() {
-	// Configure command flags
-	jiraConfigureCmd.Flags().String("host", "", "Jira host URL (required)")
-	jiraConfigureCmd.Flags().String("token", "", "Jira API token")
-	jiraConfigureCmd.Flags().String("project", "", "Default Jira project key")
-	jiraConfigureCmd.Flags().String("user", "", "Jira username/email")
-
-	// Create command flags
-	jiraCreateCmd.Flags().StringP("title", "t", "", "Issue title/summary (required)")
-	jiraCreateCmd.Flags().StringP("description", "d", "", "Issue description")
-	jiraCreateCmd.Flags().String("type", config.DefaultJiraIssueType, "Issue type")
-	jiraCreateCmd.Flags().StringSlice("labels", []string{}, "Issue labels")
-	jiraCreateCmd.MarkFlagRequired("title")
-
-	// Update command flags
-	jiraUpdateCmd.Flags().String("id", "", "Jira issue ID (required)")
-	jiraUpdateCmd.Flags().String("status", "", "New issue status")
-	jiraUpdateCmd.Flags().String("comment", "", "Add a comment")
-	jiraUpdateCmd.MarkFlagRequired("id")
-
-	// Link command flags
-	jiraLinkCmd.Flags().String("story", "", "Story ID (required)")
-	jiraLinkCmd.Flags().String("issue", "", "Jira issue ID (required)")
-	jiraLinkCmd.MarkFlagRequired("story")
-	jiraLinkCmd.MarkFlagRequired("issue")
-
 	// Add commands to root
 	JiraCmd.AddCommand(jiraConfigureCmd)
 	JiraCmd.AddCommand(jiraCreateCmd)
 	JiraCmd.AddCommand(jiraUpdateCmd)
 	JiraCmd.AddCommand(jiraLinkCmd)
+
+	// Add configure command flags
+	jiraConfigureCmd.Flags().String("host", "", "Jira host URL")
+	jiraConfigureCmd.Flags().String("token", "", "Jira API token")
+	jiraConfigureCmd.Flags().String("project", "", "Default Jira project key")
+	jiraConfigureCmd.Flags().String("user", "", "Jira username/email")
+
+	// Add create command flags
+	jiraCreateCmd.Flags().String("title", "", "Issue title")
+	jiraCreateCmd.Flags().String("description", "", "Issue description")
+	jiraCreateCmd.Flags().String("type", "Task", "Issue type (default: Task)")
+	jiraCreateCmd.Flags().String("priority", "Medium", "Issue priority (default: Medium)")
+	if err := jiraCreateCmd.MarkFlagRequired("title"); err != nil {
+		panic(fmt.Sprintf("failed to mark title flag as required: %v", err))
+	}
+
+	// Add update command flags
+	jiraUpdateCmd.Flags().String("id", "", "Issue ID")
+	jiraUpdateCmd.Flags().String("status", "", "New status")
+	jiraUpdateCmd.Flags().String("assignee", "", "New assignee")
+	if err := jiraUpdateCmd.MarkFlagRequired("id"); err != nil {
+		panic(fmt.Sprintf("failed to mark id flag as required: %v", err))
+	}
+
+	// Add link command flags
+	jiraLinkCmd.Flags().String("story", "", "Story ID")
+	jiraLinkCmd.Flags().String("issue", "", "Jira issue ID")
+	if err := jiraLinkCmd.MarkFlagRequired("story"); err != nil {
+		panic(fmt.Sprintf("failed to mark story flag as required: %v", err))
+	}
+	if err := jiraLinkCmd.MarkFlagRequired("issue"); err != nil {
+		panic(fmt.Sprintf("failed to mark issue flag as required: %v", err))
+	}
 }

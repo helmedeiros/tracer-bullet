@@ -117,12 +117,6 @@ var storyDiffCmd = &cobra.Command{
 }
 
 func init() {
-	// Add flags to new command
-	storyNewCmd.Flags().StringP("title", "t", "", "Story title (required)")
-	storyNewCmd.Flags().StringP("description", "d", "", "Story description")
-	storyNewCmd.Flags().StringSlice("tags", []string{}, "Story tags")
-	storyNewCmd.MarkFlagRequired("title")
-
 	// Add commands to root
 	StoryCmd.AddCommand(storyNewCmd)
 	StoryCmd.AddCommand(storyAfterHashCmd)
@@ -131,4 +125,21 @@ func init() {
 	StoryCmd.AddCommand(storyCommitsCmd)
 	StoryCmd.AddCommand(storyDiaryCmd)
 	StoryCmd.AddCommand(storyDiffCmd)
+
+	// Add new command flags
+	storyNewCmd.Flags().StringP("title", "t", "", "Story title")
+	storyNewCmd.Flags().StringP("description", "d", "", "Story description")
+	storyNewCmd.Flags().StringSlice("tags", []string{}, "Story tags")
+	if err := storyNewCmd.MarkFlagRequired("title"); err != nil {
+		panic(fmt.Sprintf("failed to mark title flag as required: %v", err))
+	}
+
+	// Add show command flags
+	storyAfterHashCmd.Flags().StringP("hash", "h", "", "Commit hash")
+	storyByCmd.Flags().StringP("author", "a", "", "Story author")
+	storyFilesCmd.Flags().StringP("id", "i", "", "Story ID")
+	storyCommitsCmd.Flags().StringP("id", "i", "", "Story ID")
+	storyDiaryCmd.Flags().StringP("id", "i", "", "Story ID")
+	storyDiffCmd.Flags().StringP("from", "f", "", "Start point")
+	storyDiffCmd.Flags().StringP("to", "t", "", "End point")
 }

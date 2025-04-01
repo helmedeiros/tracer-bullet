@@ -2,12 +2,12 @@ package utils
 
 import (
 	"crypto/rand"
-	"encoding/base64"
 	"fmt"
 	"os"
 	"os/exec"
 	"path/filepath"
 	"strings"
+	"time"
 )
 
 const (
@@ -16,6 +16,9 @@ const (
 	// DefaultFilePerm is the default permission for files
 	DefaultFilePerm = 0600
 )
+
+// TestConfigDir is used to override the config directory in tests
+var TestConfigDir string
 
 // EnsureDir creates a directory if it doesn't exist
 func EnsureDir(path string) error {
@@ -36,6 +39,9 @@ func GetHomeDir() (string, error) {
 
 // GetConfigDir returns the tracer configuration directory
 func GetConfigDir() (string, error) {
+	if TestConfigDir != "" {
+		return TestConfigDir, nil
+	}
 	home, err := GetHomeDir()
 	if err != nil {
 		return "", err
@@ -61,9 +67,13 @@ func RunCommand(command string, args ...string) (string, error) {
 
 // GenerateID generates a unique ID using random bytes
 func GenerateID() string {
-	b := make([]byte, 8)
-	rand.Read(b)
-	return base64.URLEncoding.EncodeToString(b)[:8]
+	b := make([]byte, 16)
+	_, err := rand.Read(b)
+	if err != nil {
+		// If we can't generate random bytes, use timestamp as fallback
+		return fmt.Sprintf("%d", time.Now().UnixNano())
+	}
+	return fmt.Sprintf("%x", b)
 }
 
 // RunGitInit initializes a new git repository in the current directory

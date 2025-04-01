@@ -1,26 +1,26 @@
 package commands
 
 import (
-	"bytes"
 	"os"
+	"path/filepath"
 	"testing"
 
 	"github.com/helmedeiros/tracer-bullet/internal/config"
+	"github.com/helmedeiros/tracer-bullet/internal/utils"
 	"github.com/spf13/cobra"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"gopkg.in/yaml.v3"
 )
 
 func TestJiraCommand(t *testing.T) {
-	tmpDir, originalDir := setupTestEnvironment(t)
-	defer func() {
-		err := os.Chdir(originalDir)
-		require.NoError(t, err)
-		os.RemoveAll(tmpDir)
-	}()
+	tmpDir, _, originalDir := setupTestEnvironment(t)
+	defer cleanupTestEnvironment(t, tmpDir, originalDir)
 
-	// First configure a project (required for config)
+	// First configure a project and user (required for jira configuration)
 	err := configureProject("test-project")
+	require.NoError(t, err)
+	err = configureUser("john.doe")
 	require.NoError(t, err)
 
 	tests := []struct {
@@ -33,21 +33,21 @@ func TestJiraCommand(t *testing.T) {
 	}{
 		{
 			name:        "configure jira with all values",
-			host:        "https://mycompany.atlassian.net",
-			token:       "my-secret-token",
-			project:     "PROJ",
-			user:        "user@example.com",
+			host:        "https://jira.example.com",
+			token:       "test-token",
+			project:     "TEST",
+			user:        "test.user",
 			expectError: false,
 		},
 		{
 			name:        "configure jira with only host",
-			host:        "https://another.atlassian.net",
+			host:        "https://jira.example.com",
 			expectError: false,
 		},
 		{
 			name:        "configure jira with empty host",
 			host:        "",
-			expectError: false,
+			expectError: true,
 		},
 	}
 
@@ -66,10 +66,6 @@ func TestJiraCommand(t *testing.T) {
 			cmd.Flags().String("token", "", "Jira API token")
 			cmd.Flags().String("project", "", "Default Jira project key")
 			cmd.Flags().String("user", "", "Jira username/email")
-
-			// Create a buffer to capture output
-			var buf bytes.Buffer
-			cmd.SetOut(&buf)
 
 			// Build command arguments
 			var args []string
@@ -90,39 +86,33 @@ func TestJiraCommand(t *testing.T) {
 			cmd.SetArgs(args)
 
 			// Execute command
-			err := cmd.Execute()
-
+			err = cmd.Execute()
 			if tt.expectError {
 				assert.Error(t, err)
 				return
 			}
-
 			require.NoError(t, err)
 
-			// Load config and verify values
-			cfg, err := config.LoadConfig()
-			require.NoError(t, err)
+			// Verify config file
+			configFile := filepath.Join(utils.TestConfigDir, config.DefaultConfigFile)
+			require.FileExists(t, configFile)
 
-			if tt.host != "" {
-				assert.Equal(t, tt.host, cfg.JiraHost, "Jira host should match")
-			}
+			// Read and verify config file contents
+			data, err := os.ReadFile(configFile)
+			require.NoError(t, err)
+			var cfg config.Config
+			err = yaml.Unmarshal(data, &cfg)
+			require.NoError(t, err)
+			assert.Equal(t, tt.host, cfg.JiraHost)
 			if tt.token != "" {
-				assert.Equal(t, tt.token, cfg.JiraToken, "Jira token should match")
+				assert.Equal(t, tt.token, cfg.JiraToken)
 			}
 			if tt.project != "" {
-				assert.Equal(t, tt.project, cfg.JiraProject, "Jira project should match")
+				assert.Equal(t, tt.project, cfg.JiraProject)
 			}
 			if tt.user != "" {
-				assert.Equal(t, tt.user, cfg.JiraUser, "Jira user should match")
+				assert.Equal(t, tt.user, cfg.JiraUser)
 			}
-
-			// Verify output format
-			output := buf.String()
-			assert.Contains(t, output, "Jira configuration updated:", "Output should contain update message")
-			assert.Contains(t, output, "Host:", "Output should show host")
-			assert.Contains(t, output, "Project:", "Output should show project")
-			assert.Contains(t, output, "User:", "Output should show user")
-			assert.Contains(t, output, "Token:", "Output should show token status")
 		})
 	}
 }

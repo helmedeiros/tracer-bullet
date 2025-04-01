@@ -17,12 +17,8 @@ import (
 )
 
 func TestStoryCommand(t *testing.T) {
-	tmpDir, originalDir := setupTestEnvironment(t)
-	defer func() {
-		err := os.Chdir(originalDir)
-		require.NoError(t, err)
-		os.RemoveAll(tmpDir)
-	}()
+	tmpDir, _, originalDir := setupTestEnvironment(t)
+	defer cleanupTestEnvironment(t, tmpDir, originalDir)
 
 	// First configure a project and user (required for story command)
 	err := configureProject("test-project")
@@ -101,7 +97,9 @@ func TestStoryCommand(t *testing.T) {
 			cmd.Flags().StringP("title", "t", "", "Story title (required)")
 			cmd.Flags().StringP("description", "d", "", "Story description")
 			cmd.Flags().StringSlice("tags", []string{}, "Story tags")
-			cmd.MarkFlagRequired("title")
+			if err := cmd.MarkFlagRequired("title"); err != nil {
+				t.Fatalf("failed to mark title flag as required: %v", err)
+			}
 
 			// Create a buffer to capture output
 			var buf, errBuf bytes.Buffer
