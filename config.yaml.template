@@ -1,0 +1,13 @@
+# Tracer Bullet Configuration Template
+# Copy this file to config.yaml and update the values
+
+# Project configuration
+project: ""  # Your project name
+user: ""     # Your username
+
+# JIRA configuration (optional)
+jira:
+  host: ""     # JIRA instance URL (e.g., https://your-company.atlassian.net)
+  token: ""    # JIRA API token
+  project: ""  # JIRA project key
+  user: ""     # JIRA username
