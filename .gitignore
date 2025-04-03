@@ -38,3 +38,4 @@ Thumbs.db
 config.yaml
 *.tmp
 commit_msg.tmp
+stories/
