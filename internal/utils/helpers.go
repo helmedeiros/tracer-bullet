@@ -39,14 +39,23 @@ func GetHomeDir() (string, error) {
 
 // GetConfigDir returns the tracer configuration directory
 func GetConfigDir() (string, error) {
+	var configDir string
 	if TestConfigDir != "" {
-		return TestConfigDir, nil
+		configDir = TestConfigDir
+	} else {
+		home, err := GetHomeDir()
+		if err != nil {
+			return "", err
+		}
+		configDir = filepath.Join(home, ".tracer")
 	}
-	home, err := GetHomeDir()
-	if err != nil {
-		return "", err
+
+	// Ensure the directory exists
+	if err := EnsureDir(configDir); err != nil {
+		return "", fmt.Errorf("failed to create config directory: %w", err)
 	}
-	return filepath.Join(home, ".tracer"), nil
+
+	return configDir, nil
 }
 
 // FileExists checks if a file exists

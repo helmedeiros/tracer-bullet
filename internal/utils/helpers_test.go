@@ -71,9 +71,9 @@ func TestGetConfigDir(t *testing.T) {
 		{
 			name: "custom config dir",
 			env: map[string]string{
-				"TRACER_CONFIG_DIR": "/custom/path",
+				"TRACER_CONFIG_DIR": "", // Will be set in the test
 			},
-			want: "/custom/path",
+			want: "", // Will be set in the test
 		},
 	}
 
@@ -88,7 +88,11 @@ func TestGetConfigDir(t *testing.T) {
 			// Reset TestConfigDir
 			TestConfigDir = ""
 			if tt.name == "custom config dir" {
-				TestConfigDir = tt.want
+				// Use a temporary directory for the custom path
+				tempDir := t.TempDir()
+				customPath := filepath.Join(tempDir, "custom-config")
+				TestConfigDir = customPath
+				tt.want = customPath
 			}
 
 			got, err := GetConfigDir()
