@@ -399,6 +399,9 @@ func init() {
 	storyNewCmd.Flags().StringP("title", "t", "", "Story title")
 	storyNewCmd.Flags().StringP("description", "d", "", "Story description")
 	storyNewCmd.Flags().StringSlice("tags", []string{}, "Story tags")
+	if err := storyNewCmd.MarkFlagRequired("title"); err != nil {
+		panic(fmt.Sprintf("failed to mark title flag as required: %v", err))
+	}
 
 	// Add after-hash command flags
 	storyAfterHashCmd.Flags().String("hash", "", "Commit hash")

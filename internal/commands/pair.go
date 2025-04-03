@@ -1,15 +1,12 @@
 package commands
 
 import (
-	"bytes"
 	"fmt"
 
 	"github.com/helmedeiros/tracer-bullet/internal/config"
 	"github.com/helmedeiros/tracer-bullet/internal/utils"
 	"github.com/spf13/cobra"
 )
-
-var outputBuffer = &bytes.Buffer{}
 
 var PairCmd = &cobra.Command{
 	Use:   "pair",
@@ -25,18 +22,18 @@ var PairCmd = &cobra.Command{
 			if len(args) < 2 {
 				return fmt.Errorf("partner name is required")
 			}
-			return startPair(args[1])
+			return startPair(cmd, args[1])
 		case "stop":
-			return stopPair()
+			return stopPair(cmd)
 		case "status":
-			return showPairStatus()
+			return showPairStatus(cmd)
 		default:
 			return fmt.Errorf("unknown command: %s", args[0])
 		}
 	},
 }
 
-func startPair(partner string) error {
+func startPair(cmd *cobra.Command, partner string) error {
 	if partner == "" {
 		return fmt.Errorf("partner name cannot be empty")
 	}
@@ -58,11 +55,11 @@ func startPair(partner string) error {
 		return fmt.Errorf("failed to save config: %w", err)
 	}
 
-	fmt.Fprintf(outputBuffer, "Started pair programming session with %s\n", partner)
+	fmt.Fprintf(cmd.OutOrStdout(), "Started pair programming session with %s\n", partner)
 	return nil
 }
 
-func stopPair() error {
+func stopPair(cmd *cobra.Command) error {
 	// Remove git config for pair
 	_, err := utils.RunCommand("git", "config", "--local", "--unset", "current.pair")
 	if err != nil {
@@ -80,25 +77,18 @@ func stopPair() error {
 		return fmt.Errorf("failed to save config: %w", err)
 	}
 
-	fmt.Fprintf(outputBuffer, "Stopped pair programming session\n")
+	fmt.Fprintf(cmd.OutOrStdout(), "Stopped pair programming session\n")
 	return nil
 }
 
-func showPairStatus() error {
+func showPairStatus(cmd *cobra.Command) error {
 	// Get current pair from git config
 	pairName, err := utils.RunCommand("git", "config", "--local", "current.pair")
 	if err != nil {
-		fmt.Fprintf(outputBuffer, "No active pair programming session\n")
+		fmt.Fprintf(cmd.OutOrStdout(), "No active pair programming session\n")
 		return nil
 	}
 
-	fmt.Fprintf(outputBuffer, "Current pair: %s\n", pairName)
+	fmt.Fprintf(cmd.OutOrStdout(), "Current pair: %s\n", pairName)
 	return nil
-}
-
-// GetOutput returns the current output buffer content and clears it
-func GetOutput() string {
-	output := outputBuffer.String()
-	outputBuffer.Reset()
-	return output
 }

@@ -1,11 +1,18 @@
 package commands
 
 import (
+	"bytes"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
+
+var outputBuffer bytes.Buffer
+
+func GetOutput() string {
+	return outputBuffer.String()
+}
 
 func TestPairCommand(t *testing.T) {
 	tmpDir, _, originalDir := setupTestEnvironment(t)
@@ -59,6 +66,7 @@ func TestPairCommand(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			outputBuffer.Reset()
+			PairCmd.SetOut(&outputBuffer)
 			err := PairCmd.RunE(PairCmd, tt.args)
 
 			if tt.wantErr {

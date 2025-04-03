@@ -1,9 +1,9 @@
-git_repo: ""
+git_repo: test-project
 git_branch: main
 git_remote: origin
-story_dir: /var/folders/zy/rtw59dpj6x95f3g4xzx5j08c0000gp/T/TestListStories3328577842/001/stories
+story_dir: stories
 pair_file: pair.json
-author_name: ""
+author_name: test-user
 author_email: ""
 pair_name: ""
 jira_host: ""
