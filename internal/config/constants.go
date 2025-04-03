@@ -19,7 +19,7 @@ const (
 
 	// Story related constants
 	DefaultStoryDir = "stories"
-	DefaultStoryExt = ".md"
+	DefaultStoryExt = ".json"
 
 	// Pair programming related constants
 	DefaultPairFile = "pair.json"
@@ -66,12 +66,29 @@ func LoadConfig() (*Config, error) {
 	configFile := filepath.Join(configDir, DefaultConfigFile)
 	data, err := os.ReadFile(configFile)
 	if err != nil {
-		return &Config{}, nil // Return default config if file doesn't exist
+		if os.IsNotExist(err) {
+			return DefaultConfig(), nil // Return default config if file doesn't exist
+		}
+		return nil, err
 	}
 
 	var cfg Config
 	if err := yaml.Unmarshal(data, &cfg); err != nil {
 		return nil, err
+	}
+
+	// Set default values for empty fields
+	if cfg.GitBranch == "" {
+		cfg.GitBranch = DefaultGitBranch
+	}
+	if cfg.GitRemote == "" {
+		cfg.GitRemote = DefaultGitRemote
+	}
+	if cfg.StoryDir == "" {
+		cfg.StoryDir = DefaultStoryDir
+	}
+	if cfg.PairFile == "" {
+		cfg.PairFile = DefaultPairFile
 	}
 
 	return &cfg, nil
@@ -84,6 +101,11 @@ func SaveConfig(cfg *Config) error {
 		return err
 	}
 
+	// Create config directory if it doesn't exist
+	if err := os.MkdirAll(configDir, utils.DefaultDirPerm); err != nil {
+		return err
+	}
+
 	configFile := filepath.Join(configDir, DefaultConfigFile)
 	data, err := yaml.Marshal(cfg)
 	if err != nil {
@@ -91,4 +113,9 @@ func SaveConfig(cfg *Config) error {
 	}
 
 	return os.WriteFile(configFile, data, utils.DefaultFilePerm)
+}
+
+// MarshalConfig marshals a config to YAML
+func MarshalConfig(cfg *Config) ([]byte, error) {
+	return yaml.Marshal(cfg)
 }
