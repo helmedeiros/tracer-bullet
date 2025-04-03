@@ -5,8 +5,10 @@ import (
 	"os"
 	"path/filepath"
 	"strings"
+	"time"
 
 	"github.com/helmedeiros/tracer-bullet/internal/config"
+	"github.com/helmedeiros/tracer-bullet/internal/story"
 	"github.com/helmedeiros/tracer-bullet/internal/utils"
 	"github.com/spf13/cobra"
 )
@@ -104,6 +106,53 @@ Will create: feat(auth): add login functionality`,
 		_, err = utils.RunCommand("git", "commit", "-F", tmpFile)
 		if err != nil {
 			return fmt.Errorf("failed to create commit: %w", err)
+		}
+
+		// Get the commit hash
+		commitHash, err := utils.RunCommand("git", "rev-parse", "HEAD")
+		if err != nil {
+			return fmt.Errorf("failed to get commit hash: %w", err)
+		}
+
+		// Get the author
+		author, err := utils.RunCommand("git", "config", "user.name")
+		if err != nil {
+			return fmt.Errorf("failed to get author: %w", err)
+		}
+
+		// If we have a current story, associate this commit with it
+		cfg, err := config.LoadConfig()
+		if err == nil && cfg.JiraHost != "" && cfg.JiraProject != "" {
+			storyID, err := utils.RunCommand("git", "config", "--local", fmt.Sprintf("%s.current.story", cfg.JiraProject))
+			if err == nil && storyID != "" {
+				// Load the story
+				s, err := story.LoadStory(storyID)
+				if err == nil {
+					// Add the commit to the story
+					s.AddCommit(commitHash, commitMsg.String(), author, time.Now())
+
+					// Get changed files
+					files, err := utils.RunCommand("git", "diff", "--name-status", "HEAD~1", "HEAD")
+					if err == nil {
+						for _, line := range strings.Split(files, "\n") {
+							if line == "" {
+								continue
+							}
+							parts := strings.Fields(line)
+							if len(parts) >= 2 {
+								status := parts[0]
+								path := parts[1]
+								s.AddFile(path, status)
+							}
+						}
+					}
+
+					// Save the updated story
+					if err := s.Save(); err != nil {
+						return fmt.Errorf("failed to update story: %w", err)
+					}
+				}
+			}
 		}
 
 		fmt.Fprintf(cmd.OutOrStdout(), "Created commit: %s\n", commitMsg.String())

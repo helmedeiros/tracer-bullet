@@ -11,6 +11,21 @@ import (
 	"github.com/helmedeiros/tracer-bullet/internal/utils"
 )
 
+// Commit represents a Git commit associated with a story
+type Commit struct {
+	Hash      string    `json:"hash"`
+	Message   string    `json:"message"`
+	Author    string    `json:"author"`
+	Timestamp time.Time `json:"timestamp"`
+}
+
+// File represents a file modified as part of a story
+type File struct {
+	Path      string    `json:"path"`
+	Status    string    `json:"status"` // added, modified, deleted
+	Timestamp time.Time `json:"timestamp"`
+}
+
 // Story represents a development story
 type Story struct {
 	ID          string    `json:"id"`
@@ -22,6 +37,8 @@ type Story struct {
 	Author      string    `json:"author"`
 	Tags        []string  `json:"tags"`
 	JiraKey     string    `json:"jira_key,omitempty"`
+	Commits     []Commit  `json:"commits,omitempty"`
+	Files       []File    `json:"files,omitempty"`
 }
 
 // NewStory creates a new story with the given title and description
@@ -132,4 +149,35 @@ func ListStories() ([]*Story, error) {
 // SaveStory saves a story to disk
 func SaveStory(s *Story) error {
 	return s.Save()
+}
+
+// AddCommit adds a commit to the story
+func (s *Story) AddCommit(hash, message, author string, timestamp time.Time) {
+	s.Commits = append(s.Commits, Commit{
+		Hash:      hash,
+		Message:   message,
+		Author:    author,
+		Timestamp: timestamp,
+	})
+	s.UpdatedAt = time.Now()
+}
+
+// AddFile adds a file to the story
+func (s *Story) AddFile(path, status string) {
+	s.Files = append(s.Files, File{
+		Path:      path,
+		Status:    status,
+		Timestamp: time.Now(),
+	})
+	s.UpdatedAt = time.Now()
+}
+
+// GetCommits returns all commits associated with the story
+func (s *Story) GetCommits() []Commit {
+	return s.Commits
+}
+
+// GetFiles returns all files associated with the story
+func (s *Story) GetFiles() []File {
+	return s.Files
 }
