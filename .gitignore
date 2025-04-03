@@ -13,6 +13,17 @@ tracer
 *.out
 coverage.html
 
+# Go specific
+testdata/
+debug
+__debug_bin
+*.prof
+*.pprof
+*.bench
+bin/
+dist/
+build/
+
 # Dependency directories
 vendor/
 
