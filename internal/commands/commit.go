@@ -101,11 +101,13 @@ func init() {
 	commitCreateCmd.Flags().String("body", "", "Commit body (optional)")
 	commitCreateCmd.Flags().Bool("breaking", false, "Mark as breaking change")
 
-	if err := commitCreateCmd.MarkFlagRequired("type"); err != nil {
-		panic(fmt.Sprintf("failed to mark type flag as required: %v", err))
-	}
-	if err := commitCreateCmd.MarkFlagRequired("message"); err != nil {
-		panic(fmt.Sprintf("failed to mark message flag as required: %v", err))
+	// Handle required flags
+	requiredFlags := []string{"type", "message"}
+	for _, flag := range requiredFlags {
+		if err := commitCreateCmd.MarkFlagRequired(flag); err != nil {
+			// Since this is during initialization, panic is appropriate
+			panic(fmt.Sprintf("failed to mark %s flag as required: %v", flag, err))
+		}
 	}
 }
 

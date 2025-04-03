@@ -21,11 +21,11 @@ clean:
 
 # Run linter
 lint:
-	golangci-lint run
+	golangci-lint run --timeout 5m
 
 # Install development dependencies
 dev-deps:
-	go install github.com/golangci/golangci-lint/cmd/golangci-lint@latest
+	curl -sSfL https://raw.githubusercontent.com/golangci/golangci-lint/master/install.sh | sh -s -- -b $(shell go env GOPATH)/bin v1.64.8
 
 # Run all checks (lint + test)
 check: lint test

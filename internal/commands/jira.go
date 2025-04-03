@@ -115,25 +115,28 @@ func init() {
 	jiraCreateCmd.Flags().String("description", "", "Issue description")
 	jiraCreateCmd.Flags().String("type", "Task", "Issue type (default: Task)")
 	jiraCreateCmd.Flags().String("priority", "Medium", "Issue priority (default: Medium)")
-	if err := jiraCreateCmd.MarkFlagRequired("title"); err != nil {
-		panic(fmt.Sprintf("failed to mark title flag as required: %v", err))
-	}
 
 	// Add update command flags
 	jiraUpdateCmd.Flags().String("id", "", "Issue ID")
 	jiraUpdateCmd.Flags().String("status", "", "New status")
 	jiraUpdateCmd.Flags().String("assignee", "", "New assignee")
-	if err := jiraUpdateCmd.MarkFlagRequired("id"); err != nil {
-		panic(fmt.Sprintf("failed to mark id flag as required: %v", err))
-	}
 
 	// Add link command flags
 	jiraLinkCmd.Flags().String("story", "", "Story ID")
 	jiraLinkCmd.Flags().String("issue", "", "Jira issue ID")
-	if err := jiraLinkCmd.MarkFlagRequired("story"); err != nil {
-		panic(fmt.Sprintf("failed to mark story flag as required: %v", err))
+
+	// Handle required flags
+	requiredFlags := map[*cobra.Command][]string{
+		jiraCreateCmd: {"title"},
+		jiraUpdateCmd: {"id"},
+		jiraLinkCmd:   {"story", "issue"},
 	}
-	if err := jiraLinkCmd.MarkFlagRequired("issue"); err != nil {
-		panic(fmt.Sprintf("failed to mark issue flag as required: %v", err))
+
+	for cmd, flags := range requiredFlags {
+		for _, flag := range flags {
+			if err := cmd.MarkFlagRequired(flag); err != nil {
+				panic(fmt.Sprintf("failed to mark %s flag as required for %s: %v", flag, cmd.Name(), err))
+			}
+		}
 	}
 }

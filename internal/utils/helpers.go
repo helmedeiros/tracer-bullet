@@ -68,8 +68,8 @@ func RunCommand(command string, args ...string) (string, error) {
 // GenerateID generates a unique ID using random bytes
 func GenerateID() string {
 	b := make([]byte, 16)
-	_, err := rand.Read(b)
-	if err != nil {
+	n, err := rand.Read(b)
+	if err != nil || n != 16 {
 		// If we can't generate random bytes, use timestamp as fallback
 		return fmt.Sprintf("%d", time.Now().UnixNano())
 	}
