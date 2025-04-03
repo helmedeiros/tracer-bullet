@@ -21,6 +21,7 @@ type Story struct {
 	UpdatedAt   time.Time `json:"updated_at"`
 	Author      string    `json:"author"`
 	Tags        []string  `json:"tags"`
+	JiraKey     string    `json:"jira_key,omitempty"`
 }
 
 // NewStory creates a new story with the given title and description
@@ -126,4 +127,9 @@ func ListStories() ([]*Story, error) {
 	}
 
 	return stories, nil
+}
+
+// SaveStory saves a story to disk
+func SaveStory(s *Story) error {
+	return s.Save()
 }

@@ -6,6 +6,7 @@ import (
 	"path/filepath"
 	"strings"
 
+	"github.com/helmedeiros/tracer-bullet/internal/config"
 	"github.com/helmedeiros/tracer-bullet/internal/utils"
 	"github.com/spf13/cobra"
 )
@@ -31,6 +32,7 @@ Will create: feat(auth): add login functionality`,
 		message, _ := cmd.Flags().GetString("message")
 		body, _ := cmd.Flags().GetString("body")
 		breaking, _ := cmd.Flags().GetBool("breaking")
+		includeJira, _ := cmd.Flags().GetBool("jira")
 
 		// Validate commit type
 		if !isValidCommitType(commitType) {
@@ -59,6 +61,23 @@ Will create: feat(auth): add login functionality`,
 		if body != "" {
 			commitMsg.WriteString("\n\n")
 			commitMsg.WriteString(body)
+		}
+
+		// Add Jira story URL if requested
+		if includeJira {
+			cfg, err := config.LoadConfig()
+			if err == nil && cfg.JiraHost != "" && cfg.JiraProject != "" {
+				// Get current story from git config
+				storyID, err := utils.RunCommand("git", "config", "--local", fmt.Sprintf("%s.current.story", cfg.JiraProject))
+				if err == nil && storyID != "" {
+					commitMsg.WriteString("\n\nJira: https://")
+					commitMsg.WriteString(cfg.JiraHost)
+					commitMsg.WriteString("/browse/")
+					commitMsg.WriteString(cfg.JiraProject)
+					commitMsg.WriteString("-")
+					commitMsg.WriteString(storyID)
+				}
+			}
 		}
 
 		// Add breaking change footer if needed
@@ -100,6 +119,7 @@ func init() {
 	commitCreateCmd.Flags().String("scope", "", "Commit scope (optional)")
 	commitCreateCmd.Flags().String("body", "", "Commit body (optional)")
 	commitCreateCmd.Flags().Bool("breaking", false, "Mark as breaking change")
+	commitCreateCmd.Flags().Bool("jira", false, "Include Jira story URL in commit body")
 
 	// Handle required flags
 	requiredFlags := []string{"type", "message"}

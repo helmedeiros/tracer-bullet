@@ -4,6 +4,8 @@ import (
 	"fmt"
 
 	"github.com/helmedeiros/tracer-bullet/internal/config"
+	"github.com/helmedeiros/tracer-bullet/internal/jira"
+	"github.com/helmedeiros/tracer-bullet/internal/story"
 	"github.com/spf13/cobra"
 )
 
@@ -72,8 +74,33 @@ var jiraCreateCmd = &cobra.Command{
 	Short: "Create a new Jira issue",
 	Long:  `Create a new Jira issue with title, description, and other metadata.`,
 	RunE: func(cmd *cobra.Command, args []string) error {
-		// TODO: Implement Jira issue creation
-		return fmt.Errorf("not implemented yet")
+		// Load config
+		cfg, err := config.LoadConfig()
+		if err != nil {
+			return fmt.Errorf("failed to load config: %w", err)
+		}
+
+		// Create Jira client
+		client, err := jira.NewClient(cfg)
+		if err != nil {
+			return fmt.Errorf("failed to create Jira client: %w", err)
+		}
+
+		// Get flag values
+		title, _ := cmd.Flags().GetString("title")
+		description, _ := cmd.Flags().GetString("description")
+		issueType, _ := cmd.Flags().GetString("type")
+		priority, _ := cmd.Flags().GetString("priority")
+
+		// Create the issue
+		issue, err := client.CreateIssue(title, description, issueType, priority)
+		if err != nil {
+			return fmt.Errorf("failed to create issue: %w", err)
+		}
+
+		fmt.Fprintf(cmd.OutOrStdout(), "Created Jira issue: %s\n", issue.Key)
+		fmt.Fprintf(cmd.OutOrStdout(), "URL: %s/browse/%s\n", cfg.JiraHost, issue.Key)
+		return nil
 	},
 }
 
@@ -82,8 +109,32 @@ var jiraUpdateCmd = &cobra.Command{
 	Short: "Update an existing Jira issue",
 	Long:  `Update an existing Jira issue with new information.`,
 	RunE: func(cmd *cobra.Command, args []string) error {
-		// TODO: Implement Jira issue update
-		return fmt.Errorf("not implemented yet")
+		// Load config
+		cfg, err := config.LoadConfig()
+		if err != nil {
+			return fmt.Errorf("failed to load config: %w", err)
+		}
+
+		// Create Jira client
+		client, err := jira.NewClient(cfg)
+		if err != nil {
+			return fmt.Errorf("failed to create Jira client: %w", err)
+		}
+
+		// Get flag values
+		issueID, _ := cmd.Flags().GetString("id")
+		status, _ := cmd.Flags().GetString("status")
+		assignee, _ := cmd.Flags().GetString("assignee")
+
+		// Update the issue
+		err = client.UpdateIssue(issueID, status, assignee)
+		if err != nil {
+			return fmt.Errorf("failed to update issue: %w", err)
+		}
+
+		fmt.Fprintf(cmd.OutOrStdout(), "Updated Jira issue: %s\n", issueID)
+		fmt.Fprintf(cmd.OutOrStdout(), "URL: %s/browse/%s\n", cfg.JiraHost, issueID)
+		return nil
 	},
 }
 
@@ -92,8 +143,43 @@ var jiraLinkCmd = &cobra.Command{
 	Short: "Link a story to a Jira issue",
 	Long:  `Link an existing story to a Jira issue for tracking.`,
 	RunE: func(cmd *cobra.Command, args []string) error {
-		// TODO: Implement story-Jira linking
-		return fmt.Errorf("not implemented yet")
+		// Load config
+		cfg, err := config.LoadConfig()
+		if err != nil {
+			return fmt.Errorf("failed to load config: %w", err)
+		}
+
+		// Create Jira client
+		client, err := jira.NewClient(cfg)
+		if err != nil {
+			return fmt.Errorf("failed to create Jira client: %w", err)
+		}
+
+		// Get flag values
+		storyID, _ := cmd.Flags().GetString("story")
+		issueID, _ := cmd.Flags().GetString("issue")
+
+		// Verify the Jira issue exists
+		issue, err := client.GetIssue(issueID)
+		if err != nil {
+			return fmt.Errorf("failed to get Jira issue: %w", err)
+		}
+
+		// Load the story
+		s, err := story.LoadStory(storyID)
+		if err != nil {
+			return fmt.Errorf("failed to load story: %w", err)
+		}
+
+		// Update story with Jira issue key
+		s.JiraKey = issue.Key
+		if err := story.SaveStory(s); err != nil {
+			return fmt.Errorf("failed to save story: %w", err)
+		}
+
+		fmt.Fprintf(cmd.OutOrStdout(), "Linked story %s to Jira issue %s\n", storyID, issue.Key)
+		fmt.Fprintf(cmd.OutOrStdout(), "URL: %s/browse/%s\n", cfg.JiraHost, issue.Key)
+		return nil
 	},
 }
 

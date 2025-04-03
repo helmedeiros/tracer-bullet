@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"strings"
 
 	"github.com/helmedeiros/tracer-bullet/internal/config"
 	"github.com/helmedeiros/tracer-bullet/internal/utils"
@@ -12,15 +13,23 @@ import (
 )
 
 var (
-	projectFlag string
-	userFlag    string
+	projectFlag      string
+	userFlag         string
+	autocompleteFlag bool
 )
 
 var ConfigureCmd = &cobra.Command{
 	Use:   "configure",
 	Short: "Configure tracer settings",
-	Long:  `Configure various settings for the tracer tool, including git repository settings and story tracking preferences.`,
+	Long:  `Configure various settings for the tracer tool, including git repository settings, story tracking preferences, and shell autocomplete.`,
 	RunE: func(cmd *cobra.Command, args []string) error {
+		if autocompleteFlag {
+			if err := configureAutocomplete(); err != nil {
+				return fmt.Errorf("failed to configure autocomplete: %w", err)
+			}
+			fmt.Println("Successfully configured zsh autocomplete")
+		}
+
 		if projectFlag != "" {
 			if err := configureProject(projectFlag); err != nil {
 				return fmt.Errorf("failed to configure project: %w", err)
@@ -35,7 +44,7 @@ var ConfigureCmd = &cobra.Command{
 			fmt.Printf("Successfully configured user: %s\n", userFlag)
 		}
 
-		if projectFlag == "" && userFlag == "" {
+		if !autocompleteFlag && projectFlag == "" && userFlag == "" {
 			return cmd.Help()
 		}
 
@@ -46,6 +55,7 @@ var ConfigureCmd = &cobra.Command{
 func init() {
 	ConfigureCmd.Flags().StringVarP(&projectFlag, "project", "p", "", "Set the project name")
 	ConfigureCmd.Flags().StringVarP(&userFlag, "user", "u", "", "Set the user name")
+	ConfigureCmd.Flags().BoolVarP(&autocompleteFlag, "autocomplete", "a", false, "Configure zsh autocomplete")
 }
 
 func configureProject(projectName string) error {
@@ -135,6 +145,51 @@ func configureUser(username string) error {
 
 	if err := os.WriteFile(configFile, data, utils.DefaultFilePerm); err != nil {
 		return fmt.Errorf("failed to write config file: %w", err)
+	}
+
+	return nil
+}
+
+func configureAutocomplete() error {
+	// Generate completion files
+	if err := GenerateZshCompletion(); err != nil {
+		return fmt.Errorf("failed to generate completion files: %w", err)
+	}
+
+	homeDir, err := os.UserHomeDir()
+	if err != nil {
+		return fmt.Errorf("failed to get home directory: %w", err)
+	}
+
+	zshrcPath := filepath.Join(homeDir, ".zshrc")
+	zshrcContent, err := os.ReadFile(zshrcPath)
+	if err != nil {
+		return fmt.Errorf("failed to read .zshrc: %w", err)
+	}
+
+	// Check if autocomplete is already configured
+	configLine := fmt.Sprintf("fpath=(%s/completion/zsh $fpath)", os.Getenv("BASEDIR"))
+	if strings.Contains(string(zshrcContent), configLine) {
+		fmt.Println("Autocomplete already configured")
+		return nil
+	}
+
+	// Append autocomplete configuration
+	autocompleteConfig := fmt.Sprintf(`
+# Tracer autocomplete configuration
+fpath=(%s/completion/zsh $fpath)
+autoload -U compinit
+compinit
+`, os.Getenv("BASEDIR"))
+
+	file, err := os.OpenFile(zshrcPath, os.O_APPEND|os.O_WRONLY, 0644)
+	if err != nil {
+		return fmt.Errorf("failed to open .zshrc: %w", err)
+	}
+	defer file.Close()
+
+	if _, err := file.WriteString(autocompleteConfig); err != nil {
+		return fmt.Errorf("failed to write to .zshrc: %w", err)
 	}
 
 	return nil
