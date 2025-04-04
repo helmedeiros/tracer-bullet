@@ -1,14 +1,14 @@
 package story
 
 import (
-	"encoding/json"
 	"fmt"
 	"os"
 	"path/filepath"
+	"strings"
 	"time"
 
-	"github.com/helmedeiros/tracer-bullet/internal/config"
 	"github.com/helmedeiros/tracer-bullet/internal/utils"
+	"gopkg.in/yaml.v3"
 )
 
 // Commit represents a Git commit associated with a story
@@ -39,6 +39,7 @@ type Story struct {
 	JiraKey     string    `json:"jira_key,omitempty"`
 	Commits     []Commit  `json:"commits,omitempty"`
 	Files       []File    `json:"files,omitempty"`
+	Filename    string    `json:"-"`
 }
 
 // NewStory creates a new story with the given title and description
@@ -64,91 +65,78 @@ func NewStory(title, description, author string) (*Story, error) {
 
 // Save saves the story to disk
 func (s *Story) Save() error {
-	// Get config to determine story directory
-	cfg, err := config.LoadConfig()
-	if err != nil {
-		return fmt.Errorf("failed to load config: %w", err)
+	if s.Filename == "" {
+		s.Filename = fmt.Sprintf("%s.yaml", s.ID)
 	}
 
-	// Create story directory if it doesn't exist
-	storyDir := cfg.StoryDir
-	if err := os.MkdirAll(storyDir, utils.DefaultDirPerm); err != nil {
-		return fmt.Errorf("failed to create story directory: %w", err)
-	}
-
-	// Create story file
-	storyFile := filepath.Join(storyDir, fmt.Sprintf("%s%s", s.ID, config.DefaultStoryExt))
-	data, err := json.MarshalIndent(s, "", "  ")
-	if err != nil {
-		return fmt.Errorf("failed to marshal story: %w", err)
-	}
-
-	if err := os.WriteFile(storyFile, data, utils.DefaultFilePerm); err != nil {
-		return fmt.Errorf("failed to write story file: %w", err)
-	}
-
-	return nil
+	return SaveStory(s)
 }
 
-// LoadStory loads a story by ID
-func LoadStory(id string) (*Story, error) {
-	cfg, err := config.LoadConfig()
+// LoadStory loads a story from a file
+func LoadStory(filename string) (*Story, error) {
+	storiesDir, err := GetStoriesDir()
 	if err != nil {
-		return nil, fmt.Errorf("failed to load config: %w", err)
+		return nil, err
 	}
 
-	storyFile := filepath.Join(cfg.StoryDir, fmt.Sprintf("%s%s", id, config.DefaultStoryExt))
-	data, err := os.ReadFile(storyFile)
+	filePath := filepath.Join(storiesDir, filename)
+	data, err := os.ReadFile(filePath)
 	if err != nil {
 		return nil, fmt.Errorf("failed to read story file: %w", err)
 	}
 
 	var story Story
-	if err := json.Unmarshal(data, &story); err != nil {
+	if err := yaml.Unmarshal(data, &story); err != nil {
 		return nil, fmt.Errorf("failed to unmarshal story: %w", err)
 	}
 
 	return &story, nil
 }
 
-// ListStories returns all stories
+// ListStories returns a list of all stories
 func ListStories() ([]*Story, error) {
-	cfg, err := config.LoadConfig()
+	storiesDir, err := GetStoriesDir()
 	if err != nil {
-		return nil, fmt.Errorf("failed to load config: %w", err)
+		return nil, err
 	}
 
-	storyDir := cfg.StoryDir
-	if _, err := os.Stat(storyDir); os.IsNotExist(err) {
-		return []*Story{}, nil
-	}
-
-	files, err := os.ReadDir(storyDir)
+	files, err := os.ReadDir(storiesDir)
 	if err != nil {
-		return nil, fmt.Errorf("failed to read story directory: %w", err)
+		return nil, fmt.Errorf("failed to read stories directory: %w", err)
 	}
 
 	var stories []*Story
 	for _, file := range files {
-		if filepath.Ext(file.Name()) != config.DefaultStoryExt {
-			continue
+		if !file.IsDir() && strings.HasSuffix(file.Name(), ".yaml") {
+			story, err := LoadStory(file.Name())
+			if err != nil {
+				return nil, fmt.Errorf("failed to load story %s: %w", file.Name(), err)
+			}
+			stories = append(stories, story)
 		}
-
-		id := file.Name()[:len(file.Name())-len(config.DefaultStoryExt)]
-		story, err := LoadStory(id)
-		if err != nil {
-			return nil, fmt.Errorf("failed to load story %s: %w", id, err)
-		}
-
-		stories = append(stories, story)
 	}
 
 	return stories, nil
 }
 
-// SaveStory saves a story to disk
-func SaveStory(s *Story) error {
-	return s.Save()
+// SaveStory saves a story to a file
+func SaveStory(story *Story) error {
+	storiesDir, err := GetStoriesDir()
+	if err != nil {
+		return err
+	}
+
+	data, err := yaml.Marshal(story)
+	if err != nil {
+		return fmt.Errorf("failed to marshal story: %w", err)
+	}
+
+	filePath := filepath.Join(storiesDir, story.Filename)
+	if err := os.WriteFile(filePath, data, 0600); err != nil {
+		return fmt.Errorf("failed to write story file: %w", err)
+	}
+
+	return nil
 }
 
 // AddCommit adds a commit to the story
@@ -180,4 +168,28 @@ func (s *Story) GetCommits() []Commit {
 // GetFiles returns all files associated with the story
 func (s *Story) GetFiles() []File {
 	return s.Files
+}
+
+// GetStoriesDir returns the directory where stories are stored
+func GetStoriesDir() (string, error) {
+	// Try to get repository-specific stories directory first
+	repoConfigDir, err := utils.GetRepoConfigDir()
+	if err == nil {
+		storiesDir := filepath.Join(repoConfigDir, "stories")
+		if err := utils.EnsureDir(storiesDir); err != nil {
+			return "", fmt.Errorf("failed to create repo stories directory: %w", err)
+		}
+		return storiesDir, nil
+	}
+
+	// Fall back to global stories directory
+	configDir, err := utils.GetConfigDir()
+	if err != nil {
+		return "", err
+	}
+	storiesDir := filepath.Join(configDir, "stories")
+	if err := utils.EnsureDir(storiesDir); err != nil {
+		return "", fmt.Errorf("failed to create stories directory: %w", err)
+	}
+	return storiesDir, nil
 }

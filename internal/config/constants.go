@@ -19,7 +19,7 @@ const (
 
 	// Story related constants
 	DefaultStoryDir = "stories"
-	DefaultStoryExt = ".json"
+	DefaultStoryExt = ".yaml"
 
 	// Pair programming related constants
 	DefaultPairFile = "pair.json"
@@ -113,9 +113,4 @@ func SaveConfig(cfg *Config) error {
 	}
 
 	return os.WriteFile(configFile, data, utils.DefaultFilePerm)
-}
-
-// MarshalConfig marshals a config to YAML
-func MarshalConfig(cfg *Config) ([]byte, error) {
-	return yaml.Marshal(cfg)
 }

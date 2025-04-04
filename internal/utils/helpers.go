@@ -111,3 +111,27 @@ func RunGitConfig(key, value string) error {
 	}
 	return nil
 }
+
+// GetGitRoot returns the root directory of the git repository
+func GetGitRoot() (string, error) {
+	output, err := RunCommand("git", "rev-parse", "--show-toplevel")
+	if err != nil {
+		return "", fmt.Errorf("failed to get git root: %w", err)
+	}
+	return output, nil
+}
+
+// GetRepoConfigDir returns the repository-specific configuration directory
+func GetRepoConfigDir() (string, error) {
+	gitRoot, err := GetGitRoot()
+	if err != nil {
+		return "", err
+	}
+
+	configDir := filepath.Join(gitRoot, ".tracer")
+	if err := EnsureDir(configDir); err != nil {
+		return "", fmt.Errorf("failed to create repo config directory: %w", err)
+	}
+
+	return configDir, nil
+}

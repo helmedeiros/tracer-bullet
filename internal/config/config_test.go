@@ -30,9 +30,17 @@ func TestLoadConfig(t *testing.T) {
 		{
 			name: "load existing config",
 			config: &Config{
-				GitRepo:   "test-repo",
-				GitBranch: "main",
-				GitRemote: "origin",
+				GitRepo:     "test-repo",
+				GitBranch:   "main",
+				GitRemote:   "origin",
+				StoryDir:    "stories",
+				PairFile:    "pair.json",
+				AuthorName:  "Test User",
+				AuthorEmail: "test@example.com",
+				JiraHost:    "https://jira.example.com",
+				JiraToken:   "token123",
+				JiraProject: "TEST",
+				JiraUser:    "test@example.com",
 			},
 			setup: func(t *testing.T) string {
 				dir := t.TempDir()
@@ -82,10 +90,20 @@ func TestLoadConfig(t *testing.T) {
 				assert.Equal(t, tt.config.GitRepo, cfg.GitRepo)
 				assert.Equal(t, tt.config.GitBranch, cfg.GitBranch)
 				assert.Equal(t, tt.config.GitRemote, cfg.GitRemote)
+				assert.Equal(t, tt.config.StoryDir, cfg.StoryDir)
+				assert.Equal(t, tt.config.PairFile, cfg.PairFile)
+				assert.Equal(t, tt.config.AuthorName, cfg.AuthorName)
+				assert.Equal(t, tt.config.AuthorEmail, cfg.AuthorEmail)
+				assert.Equal(t, tt.config.JiraHost, cfg.JiraHost)
+				assert.Equal(t, tt.config.JiraToken, cfg.JiraToken)
+				assert.Equal(t, tt.config.JiraProject, cfg.JiraProject)
+				assert.Equal(t, tt.config.JiraUser, cfg.JiraUser)
 			} else {
 				// Should return default config
 				assert.Equal(t, DefaultGitBranch, cfg.GitBranch)
 				assert.Equal(t, DefaultGitRemote, cfg.GitRemote)
+				assert.Equal(t, DefaultStoryDir, cfg.StoryDir)
+				assert.Equal(t, DefaultPairFile, cfg.PairFile)
 			}
 		})
 	}
@@ -102,9 +120,17 @@ func TestSaveConfig(t *testing.T) {
 		{
 			name: "save valid config",
 			config: &Config{
-				GitRepo:   "test-repo",
-				GitBranch: "main",
-				GitRemote: "origin",
+				GitRepo:     "test-repo",
+				GitBranch:   "main",
+				GitRemote:   "origin",
+				StoryDir:    "stories",
+				PairFile:    "pair.json",
+				AuthorName:  "Test User",
+				AuthorEmail: "test@example.com",
+				JiraHost:    "https://jira.example.com",
+				JiraToken:   "token123",
+				JiraProject: "TEST",
+				JiraUser:    "test@example.com",
 			},
 			setup: func(t *testing.T) string {
 				dir := t.TempDir()
@@ -154,6 +180,14 @@ func TestSaveConfig(t *testing.T) {
 			assert.Equal(t, tt.config.GitRepo, loadedConfig.GitRepo)
 			assert.Equal(t, tt.config.GitBranch, loadedConfig.GitBranch)
 			assert.Equal(t, tt.config.GitRemote, loadedConfig.GitRemote)
+			assert.Equal(t, tt.config.StoryDir, loadedConfig.StoryDir)
+			assert.Equal(t, tt.config.PairFile, loadedConfig.PairFile)
+			assert.Equal(t, tt.config.AuthorName, loadedConfig.AuthorName)
+			assert.Equal(t, tt.config.AuthorEmail, loadedConfig.AuthorEmail)
+			assert.Equal(t, tt.config.JiraHost, loadedConfig.JiraHost)
+			assert.Equal(t, tt.config.JiraToken, loadedConfig.JiraToken)
+			assert.Equal(t, tt.config.JiraProject, loadedConfig.JiraProject)
+			assert.Equal(t, tt.config.JiraUser, loadedConfig.JiraUser)
 		})
 	}
 }

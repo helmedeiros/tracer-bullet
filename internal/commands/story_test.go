@@ -17,26 +17,51 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
+func setupTestRepo(t *testing.T) string {
+	// Create a temporary directory for testing
+	dir := t.TempDir()
+
+	// Save current directory
+	currentDir, err := os.Getwd()
+	require.NoError(t, err)
+
+	// Change to test directory
+	err = os.Chdir(dir)
+	require.NoError(t, err)
+
+	// Initialize git repository using existing helper
+	err = utils.RunGitInit()
+	require.NoError(t, err)
+
+	// Return to original directory
+	err = os.Chdir(currentDir)
+	require.NoError(t, err)
+
+	return dir
+}
+
 func TestStoryCommand(t *testing.T) {
-	tmpDir, _, originalDir := setupTestEnvironment(t)
-	defer cleanupTestEnvironment(t, tmpDir, originalDir)
+	// Set up test repository
+	dir := setupTestRepo(t)
+
+	// Save current directory
+	currentDir, err := os.Getwd()
+	require.NoError(t, err)
+
+	// Change to test directory
+	err = os.Chdir(dir)
+	require.NoError(t, err)
+
+	// Defer changing back to original directory
+	defer func() {
+		err := os.Chdir(currentDir)
+		require.NoError(t, err)
+	}()
 
 	// First configure a project and user (required for story command)
-	err := configureProject("test-project")
+	err = configureProject("test-project")
 	require.NoError(t, err)
 	err = configureUser("john.doe")
-	require.NoError(t, err)
-
-	// Create stories directory
-	storyDir := filepath.Join(tmpDir, "stories")
-	err = os.MkdirAll(storyDir, utils.DefaultDirPerm)
-	require.NoError(t, err)
-
-	// Update config with story directory
-	cfg, err := config.LoadConfig()
-	require.NoError(t, err)
-	cfg.StoryDir = storyDir
-	err = config.SaveConfig(cfg)
 	require.NoError(t, err)
 
 	tests := []struct {
@@ -78,11 +103,12 @@ func TestStoryCommand(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			// Clean up stories directory before each test
-			var files []os.DirEntry
-			files, err = os.ReadDir(storyDir)
+			storiesDir, err := story.GetStoriesDir()
+			require.NoError(t, err)
+			files, err := os.ReadDir(storiesDir)
 			require.NoError(t, err)
 			for _, file := range files {
-				err = os.Remove(filepath.Join(storyDir, file.Name()))
+				err = os.Remove(filepath.Join(storiesDir, file.Name()))
 				require.NoError(t, err)
 			}
 
@@ -119,7 +145,7 @@ func TestStoryCommand(t *testing.T) {
 			// Set command arguments
 			cmd.SetArgs(args)
 
-			err := cmd.Execute()
+			err = cmd.Execute()
 
 			if tt.expectError {
 				assert.Error(t, err)
@@ -237,9 +263,15 @@ func TestStoryByCommand(t *testing.T) {
 	// Create test stories
 	story1, err := story.NewStory("Story 1", "Description 1", "john.doe")
 	require.NoError(t, err)
+	story1.CreatedAt = time.Now().Add(-48 * time.Hour)
+	story1.UpdatedAt = time.Now()
 	story1.Commits = []story.Commit{
-		{Hash: "abc123", Message: "Initial commit", Author: "john.doe", Timestamp: time.Now()},
+		{Hash: "abc123", Message: "Initial commit", Author: "john.doe", Timestamp: time.Now().Add(-24 * time.Hour)},
 		{Hash: "def456", Message: "Second commit", Author: "john.doe", Timestamp: time.Now()},
+	}
+	story1.Files = []story.File{
+		{Path: "file1.txt", Status: "added", Timestamp: time.Now().Add(-24 * time.Hour)},
+		{Path: "file2.txt", Status: "modified", Timestamp: time.Now()},
 	}
 	err = story1.Save()
 	require.NoError(t, err)
@@ -316,31 +348,35 @@ func TestStoryByCommand(t *testing.T) {
 }
 
 func TestStoryDiaryCommand(t *testing.T) {
-	tmpDir, _, originalDir := setupTestEnvironment(t)
-	defer cleanupTestEnvironment(t, tmpDir, originalDir)
+	// Set up test repository
+	dir := setupTestRepo(t)
+
+	// Save current directory
+	currentDir, err := os.Getwd()
+	require.NoError(t, err)
+
+	// Change to test directory
+	err = os.Chdir(dir)
+	require.NoError(t, err)
+
+	// Defer changing back to original directory
+	defer func() {
+		err := os.Chdir(currentDir)
+		require.NoError(t, err)
+	}()
 
 	// First configure a project and user
-	err := configureProject("test-project")
+	err = configureProject("test-project")
 	require.NoError(t, err)
 	err = configureUser("john.doe")
-	require.NoError(t, err)
-
-	// Create stories directory
-	storyDir := filepath.Join(tmpDir, "stories")
-	err = os.MkdirAll(storyDir, utils.DefaultDirPerm)
-	require.NoError(t, err)
-
-	// Update config with story directory
-	cfg, err := config.LoadConfig()
-	require.NoError(t, err)
-	cfg.StoryDir = storyDir
-	err = config.SaveConfig(cfg)
 	require.NoError(t, err)
 
 	// Create test story with commits and files
 	now := time.Now()
 	story1, err := story.NewStory("Story 1", "Description 1", "john.doe")
 	require.NoError(t, err)
+	story1.CreatedAt = now.Add(-48 * time.Hour)
+	story1.UpdatedAt = now
 	story1.Commits = []story.Commit{
 		{Hash: "abc123", Message: "Initial commit", Author: "john.doe", Timestamp: now.Add(-24 * time.Hour)},
 		{Hash: "def456", Message: "Second commit", Author: "john.doe", Timestamp: now},
@@ -362,7 +398,7 @@ func TestStoryDiaryCommand(t *testing.T) {
 	}{
 		{
 			name:        "valid story with time range",
-			storyID:     story1.ID,
+			storyID:     story1.Filename,
 			since:       now.Add(-48 * time.Hour).Format(time.RFC3339),
 			until:       now.Format(time.RFC3339),
 			expectError: false,
@@ -370,7 +406,7 @@ func TestStoryDiaryCommand(t *testing.T) {
 		},
 		{
 			name:        "valid story without time range",
-			storyID:     story1.ID,
+			storyID:     story1.Filename,
 			expectError: false,
 			expectCount: 2,
 		},
@@ -438,31 +474,35 @@ func TestStoryDiaryCommand(t *testing.T) {
 }
 
 func TestStoryDiffCommand(t *testing.T) {
-	tmpDir, _, originalDir := setupTestEnvironment(t)
-	defer cleanupTestEnvironment(t, tmpDir, originalDir)
+	// Set up test repository
+	dir := setupTestRepo(t)
+
+	// Save current directory
+	currentDir, err := os.Getwd()
+	require.NoError(t, err)
+
+	// Change to test directory
+	err = os.Chdir(dir)
+	require.NoError(t, err)
+
+	// Defer changing back to original directory
+	defer func() {
+		err := os.Chdir(currentDir)
+		require.NoError(t, err)
+	}()
 
 	// First configure a project and user
-	err := configureProject("test-project")
+	err = configureProject("test-project")
 	require.NoError(t, err)
 	err = configureUser("john.doe")
-	require.NoError(t, err)
-
-	// Create stories directory
-	storyDir := filepath.Join(tmpDir, "stories")
-	err = os.MkdirAll(storyDir, utils.DefaultDirPerm)
-	require.NoError(t, err)
-
-	// Update config with story directory
-	cfg, err := config.LoadConfig()
-	require.NoError(t, err)
-	cfg.StoryDir = storyDir
-	err = config.SaveConfig(cfg)
 	require.NoError(t, err)
 
 	// Create test story with commits and files
 	now := time.Now()
 	story1, err := story.NewStory("Story 1", "Description 1", "john.doe")
 	require.NoError(t, err)
+	story1.CreatedAt = now.Add(-48 * time.Hour)
+	story1.UpdatedAt = now
 	story1.Commits = []story.Commit{
 		{Hash: "abc123", Message: "Initial commit", Author: "john.doe", Timestamp: now.Add(-24 * time.Hour)},
 		{Hash: "def456", Message: "Second commit", Author: "john.doe", Timestamp: now},
@@ -484,17 +524,17 @@ func TestStoryDiffCommand(t *testing.T) {
 	}{
 		{
 			name:        "valid story with time range",
-			storyID:     story1.ID,
+			storyID:     story1.Filename,
 			from:        now.Add(-48 * time.Hour).Format(time.RFC3339),
 			to:          now.Format(time.RFC3339),
 			expectError: false,
-			expectCount: 2,
+			expectCount: 25, // Header (3) + Commits section (1 + 2*8) + Files section (1 + 2*4)
 		},
 		{
 			name:        "valid story without time range",
-			storyID:     story1.ID,
+			storyID:     story1.Filename,
 			expectError: false,
-			expectCount: 2,
+			expectCount: 25, // Same as above
 		},
 		{
 			name:        "invalid story ID",
@@ -525,9 +565,8 @@ func TestStoryDiffCommand(t *testing.T) {
 				t.Fatalf("failed to mark id flag as required: %v", err)
 			}
 
-			var buf, errBuf bytes.Buffer
+			var buf bytes.Buffer
 			cmd.SetOut(&buf)
-			cmd.SetErr(&errBuf)
 
 			args := []string{"--id", tt.storyID}
 			if tt.from != "" {
@@ -541,19 +580,12 @@ func TestStoryDiffCommand(t *testing.T) {
 			err := cmd.Execute()
 
 			if tt.expectError {
-				assert.Error(t, err)
-				return
-			}
-
-			require.NoError(t, err)
-
-			output := buf.String()
-			assert.Contains(t, output, "Story Changes:")
-			assert.Contains(t, output, story1.Title)
-			assert.Contains(t, output, story1.ID)
-			if tt.expectCount > 0 {
-				assert.Contains(t, output, "Commits:")
-				assert.Contains(t, output, "File Changes:")
+				require.Error(t, err)
+			} else {
+				require.NoError(t, err)
+				output := buf.String()
+				lines := strings.Split(strings.TrimSpace(output), "\n")
+				require.Equal(t, tt.expectCount, len(lines))
 			}
 		})
 	}

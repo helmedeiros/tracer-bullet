@@ -1,14 +1,36 @@
 package story
 
 import (
-	"path/filepath"
+	"os"
 	"testing"
 	"time"
 
-	"github.com/helmedeiros/tracer-bullet/internal/config"
 	"github.com/helmedeiros/tracer-bullet/internal/utils"
 	"github.com/stretchr/testify/assert"
 )
+
+func setupTestRepo(t *testing.T) string {
+	// Create a temporary directory for testing
+	dir := t.TempDir()
+
+	// Save current directory
+	currentDir, err := os.Getwd()
+	assert.NoError(t, err)
+
+	// Change to test directory
+	err = os.Chdir(dir)
+	assert.NoError(t, err)
+
+	// Initialize git repository using existing helper
+	err = utils.RunGitInit()
+	assert.NoError(t, err)
+
+	// Return to original directory
+	err = os.Chdir(currentDir)
+	assert.NoError(t, err)
+
+	return dir
+}
 
 func TestNewStory(t *testing.T) {
 	tests := []struct {
@@ -63,16 +85,22 @@ func TestNewStory(t *testing.T) {
 }
 
 func TestSaveAndLoadStory(t *testing.T) {
-	// Create a temporary directory for testing
-	dir := t.TempDir()
-	utils.TestConfigDir = dir
-	defer func() { utils.TestConfigDir = "" }()
+	// Set up test repository
+	dir := setupTestRepo(t)
 
-	// Create default config
-	cfg := config.DefaultConfig()
-	cfg.StoryDir = filepath.Join(dir, "stories")
-	err := config.SaveConfig(cfg)
+	// Save current directory
+	currentDir, err := os.Getwd()
 	assert.NoError(t, err)
+
+	// Change to test directory
+	err = os.Chdir(dir)
+	assert.NoError(t, err)
+
+	// Defer changing back to original directory
+	defer func() {
+		err := os.Chdir(currentDir)
+		assert.NoError(t, err)
+	}()
 
 	// Create a test story
 	story, err := NewStory("Test Story", "This is a test story", "test@example.com")
@@ -82,12 +110,8 @@ func TestSaveAndLoadStory(t *testing.T) {
 	err = story.Save()
 	assert.NoError(t, err)
 
-	// Verify the story file was created
-	storyFile := filepath.Join(cfg.StoryDir, story.ID+".json")
-	assert.FileExists(t, storyFile)
-
 	// Test loading the story
-	loadedStory, err := LoadStory(story.ID)
+	loadedStory, err := LoadStory(story.Filename)
 	assert.NoError(t, err)
 	assert.NotNil(t, loadedStory)
 	assert.Equal(t, story.ID, loadedStory.ID)
@@ -98,22 +122,28 @@ func TestSaveAndLoadStory(t *testing.T) {
 }
 
 func TestListStories(t *testing.T) {
-	// Create a temporary directory for testing
-	dir := t.TempDir()
-	utils.TestConfigDir = dir
-	defer func() { utils.TestConfigDir = "" }()
+	// Set up test repository
+	dir := setupTestRepo(t)
 
-	// Create default config
-	cfg := config.DefaultConfig()
-	cfg.StoryDir = filepath.Join(dir, "stories")
-	err := config.SaveConfig(cfg)
+	// Save current directory
+	currentDir, err := os.Getwd()
 	assert.NoError(t, err)
+
+	// Change to test directory
+	err = os.Chdir(dir)
+	assert.NoError(t, err)
+
+	// Defer changing back to original directory
+	defer func() {
+		err := os.Chdir(currentDir)
+		assert.NoError(t, err)
+	}()
 
 	// Create some test stories
 	stories := []*Story{
-		{ID: "story1", Title: "Story 1", CreatedAt: time.Now()},
-		{ID: "story2", Title: "Story 2", CreatedAt: time.Now().Add(-time.Hour)},
-		{ID: "story3", Title: "Story 3", CreatedAt: time.Now().Add(-2 * time.Hour)},
+		{ID: "story1", Title: "Story 1", CreatedAt: time.Now(), Filename: "story1.yaml"},
+		{ID: "story2", Title: "Story 2", CreatedAt: time.Now().Add(-time.Hour), Filename: "story2.yaml"},
+		{ID: "story3", Title: "Story 3", CreatedAt: time.Now().Add(-2 * time.Hour), Filename: "story3.yaml"},
 	}
 
 	// Save the stories

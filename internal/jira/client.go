@@ -13,15 +13,17 @@ type Client struct {
 	cfg    *config.Config
 }
 
-// NewClient creates a new Jira client using the provided configuration
+// NewClient creates a new JIRA client
 func NewClient(cfg *config.Config) (*Client, error) {
+	// Validate required fields
 	if cfg.JiraHost == "" {
-		return nil, fmt.Errorf("Jira host is not configured")
+		return nil, fmt.Errorf("JIRA host is required")
 	}
 	if cfg.JiraToken == "" {
-		return nil, fmt.Errorf("Jira token is not configured")
+		return nil, fmt.Errorf("JIRA token is required")
 	}
 
+	// Create HTTP client with basic auth
 	tp := jira.BasicAuthTransport{
 		Username: cfg.JiraUser,
 		Password: cfg.JiraToken,
@@ -29,7 +31,7 @@ func NewClient(cfg *config.Config) (*Client, error) {
 
 	client, err := jira.NewClient(tp.Client(), cfg.JiraHost)
 	if err != nil {
-		return nil, fmt.Errorf("failed to create Jira client: %w", err)
+		return nil, fmt.Errorf("failed to create JIRA client: %w", err)
 	}
 
 	return &Client{
@@ -38,9 +40,9 @@ func NewClient(cfg *config.Config) (*Client, error) {
 	}, nil
 }
 
-// CreateIssue creates a new Jira issue
+// CreateIssue creates a new JIRA issue
 func (c *Client) CreateIssue(title, description, issueType, priority string) (*jira.Issue, error) {
-	i := jira.Issue{
+	i := &jira.Issue{
 		Fields: &jira.IssueFields{
 			Project: jira.Project{
 				Key: c.cfg.JiraProject,
@@ -50,16 +52,15 @@ func (c *Client) CreateIssue(title, description, issueType, priority string) (*j
 			},
 			Summary:     title,
 			Description: description,
+			Priority: &jira.Priority{
+				Name: priority,
+			},
 		},
 	}
 
-	if priority != "" {
-		i.Fields.Priority = &jira.Priority{Name: priority}
-	}
-
-	issue, _, err := c.client.Issue.Create(&i)
+	issue, _, err := c.client.Issue.Create(i)
 	if err != nil {
-		return nil, fmt.Errorf("failed to create Jira issue: %w", err)
+		return nil, fmt.Errorf("failed to create issue: %w", err)
 	}
 
 	return issue, nil
