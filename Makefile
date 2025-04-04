@@ -1,8 +1,12 @@
-.PHONY: test test-coverage build clean lint pre-push
+.PHONY: test test-coverage build clean lint pre-push test-all install
 
 # Build the tracer binary
 build:
 	go build -o tracer cmd/tracer/main.go
+
+# Install the tracer binary
+install: build
+	cp tracer $(GOPATH)/bin/tracer
 
 # Run all tests
 test:
@@ -32,3 +36,6 @@ check: lint test
 
 # Run pre-push checks
 pre-push: check
+
+# Run all tests with coverage and linting
+test-all: lint test-coverage
