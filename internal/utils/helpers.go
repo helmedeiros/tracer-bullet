@@ -48,11 +48,11 @@ func GetConfigDir() (string, error) {
 			return "", err
 		}
 		configDir = filepath.Join(home, ".tracer")
-	}
 
-	// Ensure the directory exists
-	if err := EnsureDir(configDir); err != nil {
-		return "", fmt.Errorf("failed to create config directory: %w", err)
+		// Ensure the directory exists only for non-test directories
+		if err := EnsureDir(configDir); err != nil {
+			return "", fmt.Errorf("failed to create config directory: %w", err)
+		}
 	}
 
 	return configDir, nil
@@ -129,9 +129,46 @@ func GetRepoConfigDir() (string, error) {
 	}
 
 	configDir := filepath.Join(gitRoot, ".tracer")
-	if err := EnsureDir(configDir); err != nil {
+
+	// Create the directory if it doesn't exist
+	if err := os.MkdirAll(configDir, DefaultDirPerm); err != nil {
 		return "", fmt.Errorf("failed to create repo config directory: %w", err)
 	}
 
+	// Ensure the directory is writable
+	if err := checkDirWritable(configDir); err != nil {
+		return "", fmt.Errorf("repo config directory is not writable: %w", err)
+	}
+
 	return configDir, nil
+}
+
+// checkDirWritable checks if a directory is writable by attempting to create a temporary file
+func checkDirWritable(dir string) error {
+	// First check if the path exists and is a directory
+	if info, err := os.Stat(dir); err == nil {
+		if !info.IsDir() {
+			return fmt.Errorf("path exists but is not a directory: %s", dir)
+		}
+	} else if !os.IsNotExist(err) {
+		return fmt.Errorf("failed to check directory: %w", err)
+	}
+
+	// If the directory doesn't exist, try to create it
+	if err := os.MkdirAll(dir, DefaultDirPerm); err != nil {
+		return fmt.Errorf("directory does not exist and cannot be created: %w", err)
+	}
+
+	// Try to create a temporary file to check if the directory is writable
+	tmpFile := filepath.Join(dir, ".tracer_test_"+GenerateID())
+	if err := os.WriteFile(tmpFile, []byte("test"), DefaultFilePerm); err != nil {
+		return fmt.Errorf("directory is not writable: %w", err)
+	}
+
+	// Clean up the temporary file
+	if err := os.Remove(tmpFile); err != nil {
+		return fmt.Errorf("failed to remove temporary file: %w", err)
+	}
+
+	return nil
 }

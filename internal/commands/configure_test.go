@@ -1,12 +1,14 @@
 package commands
 
 import (
+	"bytes"
 	"os"
 	"path/filepath"
 	"testing"
 
 	"github.com/helmedeiros/tracer-bullet/internal/config"
 	"github.com/helmedeiros/tracer-bullet/internal/utils"
+	"github.com/spf13/cobra"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"gopkg.in/yaml.v3"
@@ -54,8 +56,12 @@ func TestConfigureProject(t *testing.T) {
 			require.NoError(t, err)
 			assert.Equal(t, tt.projectName, projectName)
 
+			// Get repository-specific config directory
+			configDir, err := utils.GetRepoConfigDir()
+			require.NoError(t, err)
+
 			// Verify config file
-			configFile := filepath.Join(utils.TestConfigDir, config.DefaultConfigFile)
+			configFile := filepath.Join(configDir, config.DefaultConfigFile)
 			require.FileExists(t, configFile)
 
 			// Read and verify config file contents
@@ -111,8 +117,12 @@ func TestConfigureUser(t *testing.T) {
 			require.NoError(t, err)
 			assert.Equal(t, tt.username, username)
 
+			// Get repository-specific config directory
+			configDir, err := utils.GetRepoConfigDir()
+			require.NoError(t, err)
+
 			// Verify config file
-			configFile := filepath.Join(utils.TestConfigDir, config.DefaultConfigFile)
+			configFile := filepath.Join(configDir, config.DefaultConfigFile)
 			require.FileExists(t, configFile)
 
 			// Read and verify config file contents
@@ -124,4 +134,42 @@ func TestConfigureUser(t *testing.T) {
 			assert.Equal(t, tt.username, cfg.AuthorName)
 		})
 	}
+}
+
+func TestConfigureShow(t *testing.T) {
+	tmpDir, _, originalDir := setupTestEnvironment(t)
+	defer cleanupTestEnvironment(t, tmpDir, originalDir)
+
+	// First configure a project and user
+	err := configureProject("test-project")
+	require.NoError(t, err)
+	err = configureUser("john.doe")
+	require.NoError(t, err)
+
+	// Create a test command
+	cmd := &cobra.Command{
+		Use:   "show",
+		Short: "Show current configuration",
+		RunE:  configureShowCmd.RunE,
+	}
+
+	// Create a buffer to capture output
+	var buf, errBuf bytes.Buffer
+	cmd.SetOut(&buf)
+	cmd.SetErr(&errBuf)
+
+	// Execute the command
+	err = cmd.Execute()
+	require.NoError(t, err)
+
+	// Verify output
+	output := buf.String()
+	assert.Contains(t, output, "Current Configuration:")
+	assert.Contains(t, output, "Project: test-project")
+	assert.Contains(t, output, "User: john.doe")
+	assert.Contains(t, output, "Jira:")
+	assert.Contains(t, output, "  Host: ")
+	assert.Contains(t, output, "  Project: ")
+	assert.Contains(t, output, "  User: ")
+	assert.Contains(t, output, "  Token: [NOT CONFIGURED]")
 }

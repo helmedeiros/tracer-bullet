@@ -50,3 +50,9 @@ config.yaml
 *.tmp
 commit_msg.tmp
 stories/
+
+# Test repository files
+test-repo/
+
+# Git commit message temporary files
+.git-commit-msg.tmp

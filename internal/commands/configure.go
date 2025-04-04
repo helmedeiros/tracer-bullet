@@ -52,10 +52,42 @@ var ConfigureCmd = &cobra.Command{
 	},
 }
 
+var configureShowCmd = &cobra.Command{
+	Use:   "show",
+	Short: "Show current configuration",
+	Long:  `Display the current configuration settings for the tracer tool.`,
+	RunE: func(cmd *cobra.Command, args []string) error {
+		// Load current config
+		cfg, err := config.LoadConfig()
+		if err != nil {
+			return fmt.Errorf("failed to load config: %w", err)
+		}
+
+		// Print configuration
+		fmt.Fprintf(cmd.OutOrStdout(), "Current Configuration:\n")
+		fmt.Fprintf(cmd.OutOrStdout(), "Project: %s\n", cfg.GitRepo)
+		fmt.Fprintf(cmd.OutOrStdout(), "User: %s\n", cfg.AuthorName)
+		fmt.Fprintf(cmd.OutOrStdout(), "Jira:\n")
+		fmt.Fprintf(cmd.OutOrStdout(), "  Host: %s\n", cfg.JiraHost)
+		fmt.Fprintf(cmd.OutOrStdout(), "  Project: %s\n", cfg.JiraProject)
+		fmt.Fprintf(cmd.OutOrStdout(), "  User: %s\n", cfg.JiraUser)
+		if cfg.JiraToken != "" {
+			fmt.Fprintf(cmd.OutOrStdout(), "  Token: [CONFIGURED]\n")
+		} else {
+			fmt.Fprintf(cmd.OutOrStdout(), "  Token: [NOT CONFIGURED]\n")
+		}
+
+		return nil
+	},
+}
+
 func init() {
 	ConfigureCmd.Flags().StringVarP(&projectFlag, "project", "p", "", "Set the project name")
 	ConfigureCmd.Flags().StringVarP(&userFlag, "user", "u", "", "Set the user name")
 	ConfigureCmd.Flags().BoolVarP(&autocompleteFlag, "autocomplete", "a", false, "Configure zsh autocomplete")
+
+	// Add show subcommand
+	ConfigureCmd.AddCommand(configureShowCmd)
 }
 
 func configureProject(projectName string) error {
@@ -63,19 +95,16 @@ func configureProject(projectName string) error {
 		return fmt.Errorf("project name cannot be empty")
 	}
 
-	// Set git config
-	_, err := utils.RunCommand("git", "config", "--local", "current.project", projectName)
+	// Get repository-specific config directory first
+	configDir, err := utils.GetRepoConfigDir()
 	if err != nil {
-		return fmt.Errorf("failed to set git config: %w", err)
+		return fmt.Errorf("failed to get repo config directory: %w", err)
 	}
 
-	// Create config directory if it doesn't exist
-	configDir, err := utils.GetConfigDir()
+	// Set git config
+	_, err = utils.RunCommand("git", "config", "--local", "current.project", projectName)
 	if err != nil {
-		return fmt.Errorf("failed to get config directory: %w", err)
-	}
-	if err := utils.EnsureDir(configDir); err != nil {
-		return fmt.Errorf("failed to create config directory: %w", err)
+		return fmt.Errorf("failed to set git config: %w", err)
 	}
 
 	// Create or update config file
@@ -115,13 +144,10 @@ func configureUser(username string) error {
 		return fmt.Errorf("failed to set git config for user: %w", err)
 	}
 
-	// Create config directory if it doesn't exist
-	configDir, err := utils.GetConfigDir()
+	// Get repository-specific config directory
+	configDir, err := utils.GetRepoConfigDir()
 	if err != nil {
-		return fmt.Errorf("failed to get config directory: %w", err)
-	}
-	if err := utils.EnsureDir(configDir); err != nil {
-		return fmt.Errorf("failed to create config directory: %w", err)
+		return fmt.Errorf("failed to get repo config directory: %w", err)
 	}
 
 	// Update config file

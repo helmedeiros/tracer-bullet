@@ -177,19 +177,21 @@ func GetStoriesDir() (string, error) {
 	if err == nil {
 		storiesDir := filepath.Join(repoConfigDir, "stories")
 		if err := utils.EnsureDir(storiesDir); err != nil {
-			return "", fmt.Errorf("failed to create repo stories directory: %w", err)
+			return "", fmt.Errorf("failed to create stories directory: %w", err)
 		}
 		return storiesDir, nil
 	}
 
-	// Fall back to global stories directory
-	configDir, err := utils.GetConfigDir()
+	// If no repository is found, use global stories directory
+	globalConfigDir, err := utils.GetConfigDir()
 	if err != nil {
 		return "", err
 	}
-	storiesDir := filepath.Join(configDir, "stories")
+
+	storiesDir := filepath.Join(globalConfigDir, "stories")
 	if err := utils.EnsureDir(storiesDir); err != nil {
 		return "", fmt.Errorf("failed to create stories directory: %w", err)
 	}
+
 	return storiesDir, nil
 }
