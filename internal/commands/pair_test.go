@@ -51,7 +51,7 @@ func TestPairCommand(t *testing.T) {
 		},
 		{
 			name:       "show status",
-			args:       []string{"status"},
+			args:       []string{"show"},
 			wantErr:    false,
 			wantOutput: "No active pair programming session\n",
 		},

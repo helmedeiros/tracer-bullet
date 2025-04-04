@@ -25,7 +25,7 @@ var PairCmd = &cobra.Command{
 			return startPair(cmd, args[1])
 		case "stop":
 			return stopPair(cmd)
-		case "status":
+		case "show":
 			return showPairStatus(cmd)
 		default:
 			return fmt.Errorf("unknown command: %s", args[0])
@@ -89,6 +89,38 @@ func showPairStatus(cmd *cobra.Command) error {
 		return nil
 	}
 
-	fmt.Fprintf(cmd.OutOrStdout(), "Current pair: %s\n", pairName)
+	// Get project name
+	projectName, err := utils.RunCommand("git", "config", "--local", "current.project")
+	if err != nil {
+		projectName = "unknown project"
+	}
+
+	// Get config for additional context
+	cfg, err := config.LoadConfig()
+	if err != nil {
+		cfg = config.DefaultConfig()
+	}
+
+	// Get current user
+	currentUser, err := utils.RunCommand("git", "config", "--local", fmt.Sprintf("%s.user", projectName))
+	if err != nil {
+		currentUser = "unknown user"
+	}
+
+	// Display detailed pairing information
+	fmt.Fprintf(cmd.OutOrStdout(), "\nPair Programming Session:\n")
+	fmt.Fprintf(cmd.OutOrStdout(), "  Project: %s\n", projectName)
+	fmt.Fprintf(cmd.OutOrStdout(), "  Current User: %s\n", currentUser)
+	fmt.Fprintf(cmd.OutOrStdout(), "  Pair Partner: %s\n", pairName)
+
+	// If there's a story associated with the pair, show it
+	if cfg.JiraHost != "" && cfg.JiraProject != "" {
+		storyID, err := utils.RunCommand("git", "config", "--local", fmt.Sprintf("%s.current.story", cfg.JiraProject))
+		if err == nil && storyID != "" {
+			fmt.Fprintf(cmd.OutOrStdout(), "  Current Story: %s\n", storyID)
+		}
+	}
+	fmt.Fprintf(cmd.OutOrStdout(), "\n")
+
 	return nil
 }
