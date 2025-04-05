@@ -67,6 +67,10 @@ func NewStoryWithNumber(title, description, author string, number int) (*Story, 
 		return nil, fmt.Errorf("number must be greater than 0")
 	}
 
+	if title == "" {
+		return nil, fmt.Errorf("title is required when creating a story with a number")
+	}
+
 	now := time.Now()
 	story := &Story{
 		ID:          utils.GenerateID(),

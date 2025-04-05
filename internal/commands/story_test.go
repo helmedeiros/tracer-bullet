@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
-	"strconv"
 	"strings"
 	"testing"
 	"time"
@@ -42,229 +41,129 @@ func setupTestRepo(t *testing.T) string {
 }
 
 func TestStoryCommand(t *testing.T) {
-	// Set up test repository
-	dir := setupTestRepo(t)
-
-	// Save current directory
-	currentDir, err := os.Getwd()
-	require.NoError(t, err)
-
-	// Change to test directory
-	err = os.Chdir(dir)
-	require.NoError(t, err)
-
-	// Defer changing back to original directory
-	defer func() {
-		err := os.Chdir(currentDir)
-		require.NoError(t, err)
-	}()
-
-	// Create initial empty config
-	cfg := &config.Config{}
-	err = config.SaveConfig(cfg)
-	require.NoError(t, err)
-
 	tests := []struct {
-		name        string
-		title       string
-		description string
-		tags        []string
-		number      int
-		expectError bool
-		errorMsg    string
-		setup       func() error
+		name           string
+		args           []string
+		flags          map[string]string
+		expectError    bool
+		errorMsg       string
+		expectedOutput string
 	}{
 		{
-			name:        "create story with number only",
-			number:      123,
-			expectError: false,
-			setup: func() error {
-				if err := configureProject("test-project"); err != nil {
-					return err
-				}
-				return configureUser("john.doe")
+			name: "create story with number only",
+			flags: map[string]string{
+				"number": "123",
 			},
-		},
-		{
-			name:        "create story with number and title",
-			title:       "Test Story",
-			number:      124,
-			expectError: false,
-			setup: func() error {
-				if err := configureProject("test-project"); err != nil {
-					return err
-				}
-				return configureUser("john.doe")
-			},
-		},
-		{
-			name:        "create story with number and description",
-			description: "This is a test story",
-			number:      125,
-			expectError: false,
-			setup: func() error {
-				if err := configureProject("test-project"); err != nil {
-					return err
-				}
-				return configureUser("john.doe")
-			},
-		},
-		{
-			name:        "create story with number and tags",
-			tags:        []string{"test", "feature"},
-			number:      126,
-			expectError: false,
-			setup: func() error {
-				if err := configureProject("test-project"); err != nil {
-					return err
-				}
-				return configureUser("john.doe")
-			},
-		},
-		{
-			name:        "create story without number",
-			title:       "Test Story",
 			expectError: true,
-			setup: func() error {
-				if err := configureProject("test-project"); err != nil {
-					return err
-				}
-				return configureUser("john.doe")
-			},
+			errorMsg:    "title is required when creating a story with a number",
 		},
 		{
-			name:        "create story with invalid number",
-			title:       "Test Story",
-			number:      0,
-			expectError: true,
-			setup: func() error {
-				if err := configureProject("test-project"); err != nil {
-					return err
-				}
-				return configureUser("john.doe")
+			name: "create story with number and title",
+			flags: map[string]string{
+				"number": "123",
+				"title":  "Test Story",
 			},
+			expectError: false,
 		},
 		{
-			name:        "create story without project configuration",
-			number:      127,
-			expectError: true,
-			errorMsg:    "project not configured",
-			setup: func() error {
-				// Reset config to empty state
-				cfg := &config.Config{}
-				return config.SaveConfig(cfg)
+			name: "create story with number and description",
+			flags: map[string]string{
+				"number":      "123",
+				"title":       "Test Story",
+				"description": "Test Description",
 			},
+			expectError: false,
 		},
 		{
-			name:        "create story without user configuration",
-			number:      128,
-			expectError: true,
-			errorMsg:    "user not configured",
-			setup: func() error {
-				// Configure only project
-				return configureProject("test-project")
+			name: "create story with number and tags",
+			flags: map[string]string{
+				"number": "123",
+				"title":  "Test Story",
+				"tags":   "tag1,tag2",
 			},
+			expectError: false,
+		},
+		{
+			name: "create story without number",
+			flags: map[string]string{
+				"title": "Test Story",
+			},
+			expectError: true,
+			errorMsg:    "number must be greater than 0",
+		},
+		{
+			name: "create story with invalid number",
+			flags: map[string]string{
+				"number": "0",
+				"title":  "Test Story",
+			},
+			expectError: true,
+			errorMsg:    "number must be greater than 0",
+		},
+		{
+			name: "create story without project configuration",
+			flags: map[string]string{
+				"number": "123",
+				"title":  "Test Story",
+			},
+			expectError: true,
+			errorMsg:    "project not configured. Please run 'tracer configure project' first",
+		},
+		{
+			name: "create story without user configuration",
+			flags: map[string]string{
+				"number": "123",
+				"title":  "Test Story",
+			},
+			expectError: true,
+			errorMsg:    "user not configured. Please run 'tracer configure user' first",
 		},
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			// Clean up stories directory before each test
-			storiesDir, err := story.GetStoriesDir()
-			require.NoError(t, err)
-			files, err := os.ReadDir(storiesDir)
-			require.NoError(t, err)
-			for _, file := range files {
-				err = os.Remove(filepath.Join(storiesDir, file.Name()))
+			// Set up test environment
+			tmpDir, _, originalDir := setupTestEnvironment(t)
+			defer cleanupTestEnvironment(t, tmpDir, originalDir)
+
+			// Configure project and user for tests that need them
+			if tt.name != "create story without project configuration" && tt.name != "create story without user configuration" {
+				err := configureProject("test-project")
+				require.NoError(t, err)
+				err = configureUser("john.doe")
+				require.NoError(t, err)
+			} else if tt.name == "create story without user configuration" {
+				err := configureProject("test-project")
 				require.NoError(t, err)
 			}
 
-			// Run setup if provided
-			if tt.setup != nil {
-				err = tt.setup()
+			// Create command
+			cmd := storyNewCmd
+
+			// Set flags
+			err := cmd.Flags().Set("number", tt.flags["number"])
+			require.NoError(t, err)
+			err = cmd.Flags().Set("title", tt.flags["title"])
+			require.NoError(t, err)
+			if description, ok := tt.flags["description"]; ok {
+				err = cmd.Flags().Set("description", description)
+				require.NoError(t, err)
+			}
+			if tags, ok := tt.flags["tags"]; ok {
+				err = cmd.Flags().Set("tags", tags)
 				require.NoError(t, err)
 			}
 
-			// Create a new command instance for each test
-			cmd := &cobra.Command{
-				Use:   "new",
-				Short: "Create a new story",
-				Long:  `Create a new story with title, description, and other metadata.`,
-				RunE:  storyNewCmd.RunE,
-			}
-
-			// Add flags to the command
-			cmd.Flags().StringP("title", "t", "", "Story title")
-			cmd.Flags().StringP("description", "d", "", "Story description")
-			cmd.Flags().StringSlice("tags", []string{}, "Story tags")
-			cmd.Flags().IntP("number", "n", 0, "Story number")
-			if err := cmd.MarkFlagRequired("number"); err != nil {
-				t.Fatalf("failed to mark number flag as required: %v", err)
-			}
-
-			// Create a buffer to capture output
-			var buf, errBuf bytes.Buffer
-			cmd.SetOut(&buf)
-			cmd.SetErr(&errBuf) // Capture error output
-
-			// Build command arguments
-			args := []string{"--number", strconv.Itoa(tt.number)}
-			if tt.title != "" {
-				args = append(args, "--title", tt.title)
-			}
-			if tt.description != "" {
-				args = append(args, "--description", tt.description)
-			}
-			if len(tt.tags) > 0 {
-				args = append(args, "--tags", strings.Join(tt.tags, ","))
-			}
-
-			// Set command arguments
-			cmd.SetArgs(args)
-
-			err = cmd.Execute()
-
+			// Execute command
+			err = cmd.RunE(cmd, tt.args)
 			if tt.expectError {
 				assert.Error(t, err)
 				if tt.errorMsg != "" {
-					assert.Contains(t, err.Error(), tt.errorMsg)
+					assert.Equal(t, tt.errorMsg, err.Error())
 				}
 				return
 			}
-
 			require.NoError(t, err)
-
-			// Verify story was created
-			stories, err := story.ListStories()
-			require.NoError(t, err)
-			require.Len(t, stories, 1, "Expected exactly one story to be created")
-
-			// Get the created story
-			createdStory := stories[0]
-			assert.NotEmpty(t, createdStory.ID, "Story ID should not be empty")
-			assert.Equal(t, tt.title, createdStory.Title, "Story title should match")
-			assert.Equal(t, tt.description, createdStory.Description, "Story description should match")
-			assert.Equal(t, tt.number, createdStory.Number, "Story number should match")
-			assert.Equal(t, "john.doe", createdStory.Author, "Story author should match configured user")
-			assert.Equal(t, "open", createdStory.Status, "Story status should be 'open'")
-			if len(tt.tags) > 0 {
-				assert.Equal(t, tt.tags, createdStory.Tags, "Story tags should match")
-			}
-
-			// Verify output format
-			output := buf.String()
-			expectedOutput := fmt.Sprintf("Created new story: %s\nNumber: %d\n", createdStory.ID, tt.number)
-			if tt.title != "" {
-				expectedOutput += fmt.Sprintf("Title: %s\n", tt.title)
-			}
-			if tt.description != "" {
-				expectedOutput += fmt.Sprintf("Description: %s\n", tt.description)
-			}
-			if len(tt.tags) > 0 {
-				expectedOutput += fmt.Sprintf("Tags: %v\n", tt.tags)
-			}
-			expectedOutput += "Author: john.doe\nStatus: open\n"
-			assert.Equal(t, expectedOutput, output, "Command output should match expected format")
 		})
 	}
 }

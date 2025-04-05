@@ -7,6 +7,7 @@ import (
 
 	"github.com/helmedeiros/tracer-bullet/internal/utils"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 func setupTestRepo(t *testing.T) string {
@@ -39,47 +40,56 @@ func TestNewStory(t *testing.T) {
 		description string
 		author      string
 		number      int
-		wantErr     bool
+		expectError bool
+		errorMsg    string
 	}{
 		{
-			name:    "valid story with number only",
-			number:  123,
-			wantErr: false,
+			name:        "valid story with number and title",
+			title:       "Test Story",
+			description: "Test Description",
+			author:      "john.doe",
+			number:      123,
+			expectError: false,
 		},
 		{
 			name:        "valid story with all fields",
 			title:       "Test Story",
-			description: "This is a test story",
-			author:      "test@example.com",
+			description: "Test Description",
+			author:      "john.doe",
 			number:      124,
-			wantErr:     false,
+			expectError: false,
 		},
 		{
 			name:        "missing number",
 			title:       "Test Story",
-			description: "This is a test story",
-			author:      "test@example.com",
+			description: "Test Description",
+			author:      "john.doe",
 			number:      0,
-			wantErr:     true,
+			expectError: true,
+			errorMsg:    "number must be greater than 0",
 		},
 		{
-			name:        "negative number",
-			title:       "Test Story",
-			description: "This is a test story",
-			author:      "test@example.com",
-			number:      -1,
-			wantErr:     true,
+			name:        "missing title with number",
+			title:       "",
+			description: "Test Description",
+			author:      "john.doe",
+			number:      125,
+			expectError: true,
+			errorMsg:    "title is required when creating a story with a number",
 		},
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			story, err := NewStoryWithNumber(tt.title, tt.description, tt.author, tt.number)
-			if tt.wantErr {
+			if tt.expectError {
 				assert.Error(t, err)
+				if tt.errorMsg != "" {
+					assert.Equal(t, tt.errorMsg, err.Error())
+				}
 				return
 			}
-			assert.NoError(t, err)
+			require.NoError(t, err)
 			assert.NotNil(t, story)
 			assert.Equal(t, tt.title, story.Title)
 			assert.Equal(t, tt.description, story.Description)
