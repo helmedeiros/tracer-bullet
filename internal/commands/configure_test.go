@@ -2,6 +2,7 @@ package commands
 
 import (
 	"bytes"
+	"fmt"
 	"os"
 	"path/filepath"
 	"testing"
@@ -78,60 +79,89 @@ func TestConfigureProject(t *testing.T) {
 }
 
 func TestConfigureUser(t *testing.T) {
-	tmpDir, _, originalDir := setupTestEnvironment(t)
-	defer cleanupTestEnvironment(t, tmpDir, originalDir)
-
-	// First configure a project (required for user configuration)
-	err := configureProject("test-project")
-	require.NoError(t, err)
-
 	tests := []struct {
 		name        string
 		username    string
 		expectError bool
+		errorMsg    string
+		setup       func() error
 	}{
 		{
-			name:        "configure user with valid name",
+			name:        "valid_name",
 			username:    "john.doe",
 			expectError: false,
+			setup: func() error {
+				return configureProject("test-project")
+			},
 		},
 		{
-			name:        "configure user with empty name",
+			name:        "empty_name",
 			username:    "",
 			expectError: true,
+			errorMsg:    "username cannot be empty",
+			setup: func() error {
+				return configureProject("test-project")
+			},
+		},
+		{
+			name:        "without_project",
+			username:    "john.doe",
+			expectError: true,
+			errorMsg:    "project not configured. Please run 'tracer configure project' first",
+			setup: func() error {
+				return nil // No setup needed, we want to test without project configuration
+			},
 		},
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
+			// Set up test environment
+			tmpDir, _, originalDir := setupTestEnvironment(t)
+			defer cleanupTestEnvironment(t, tmpDir, originalDir)
+
+			// Run setup if provided
+			if tt.setup != nil {
+				err := tt.setup()
+				require.NoError(t, err)
+			}
+
 			// Execute configure user command
 			err := configureUser(tt.username)
 			if tt.expectError {
 				assert.Error(t, err)
+				if tt.errorMsg != "" {
+					assert.Equal(t, tt.errorMsg, err.Error())
+				}
 				return
 			}
 			require.NoError(t, err)
 
-			// Verify git config
-			username, err := utils.RunCommand("git", "config", "--local", "test-project.user")
-			require.NoError(t, err)
-			assert.Equal(t, tt.username, username)
+			// Only verify git config and config file contents if we don't expect an error
+			if !tt.expectError {
+				// Verify git config
+				projectName, err := utils.RunCommand("git", "config", "--local", "current.project")
+				require.NoError(t, err)
+				username, err := utils.RunCommand("git", "config", "--local", fmt.Sprintf("%s.user", projectName))
+				require.NoError(t, err)
+				assert.Equal(t, tt.username, username)
 
-			// Get repository-specific config directory
-			configDir, err := utils.GetRepoConfigDir()
-			require.NoError(t, err)
+				// Get repository-specific config directory
+				configDir, err := utils.GetRepoConfigDir()
+				require.NoError(t, err)
 
-			// Verify config file
-			configFile := filepath.Join(configDir, config.DefaultConfigFile)
-			require.FileExists(t, configFile)
+				// Verify config file
+				configFile := filepath.Join(configDir, config.DefaultConfigFile)
+				require.FileExists(t, configFile)
 
-			// Read and verify config file contents
-			data, err := os.ReadFile(configFile)
-			require.NoError(t, err)
-			var cfg config.Config
-			err = yaml.Unmarshal(data, &cfg)
-			require.NoError(t, err)
-			assert.Equal(t, tt.username, cfg.AuthorName)
+				// Read and verify config file contents
+				data, err := os.ReadFile(configFile)
+				require.NoError(t, err)
+				var cfg config.Config
+				err = yaml.Unmarshal(data, &cfg)
+				require.NoError(t, err)
+				assert.Equal(t, tt.username, cfg.AuthorName)
+			}
 		})
 	}
 }

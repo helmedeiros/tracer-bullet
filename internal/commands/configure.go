@@ -135,7 +135,7 @@ func configureUser(username string) error {
 	// Get current project name
 	projectName, err := utils.RunCommand("git", "config", "--local", "current.project")
 	if err != nil {
-		return fmt.Errorf("failed to get current project: %w", err)
+		return fmt.Errorf("project not configured. Please run 'tracer configure project' first")
 	}
 
 	// Set git config for user
@@ -154,7 +154,7 @@ func configureUser(username string) error {
 	configFile := filepath.Join(configDir, config.DefaultConfigFile)
 	data, err := os.ReadFile(configFile)
 	if err != nil {
-		return fmt.Errorf("failed to read config file: %w", err)
+		return fmt.Errorf("project not configured. Please run 'tracer configure project' first")
 	}
 
 	var cfg config.Config
