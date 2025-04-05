@@ -5,6 +5,7 @@ import (
 	"os"
 	"path/filepath"
 	"testing"
+	"time"
 
 	"github.com/helmedeiros/tracer-bullet/internal/utils"
 	"github.com/stretchr/testify/require"
@@ -25,7 +26,7 @@ func setupTestEnvironment(t *testing.T) (string, string, string) {
 	require.NoError(t, err)
 
 	// Create a temporary directory for testing with a unique name
-	tmpDir, err := os.MkdirTemp("", fmt.Sprintf("tracer-test-%s-*", t.Name()))
+	tmpDir, err := os.MkdirTemp("", fmt.Sprintf("tracer-test-%d-*", time.Now().UnixNano()))
 	require.NoError(t, err)
 
 	// Convert tmpDir to absolute path
