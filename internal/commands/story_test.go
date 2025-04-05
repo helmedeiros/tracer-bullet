@@ -59,10 +59,9 @@ func TestStoryCommand(t *testing.T) {
 		require.NoError(t, err)
 	}()
 
-	// First configure a project and user (required for story command)
-	err = configureProject("test-project")
-	require.NoError(t, err)
-	err = configureUser("john.doe")
+	// Create initial empty config
+	cfg := &config.Config{}
+	err = config.SaveConfig(cfg)
 	require.NoError(t, err)
 
 	tests := []struct {
@@ -72,40 +71,99 @@ func TestStoryCommand(t *testing.T) {
 		tags        []string
 		number      int
 		expectError bool
+		errorMsg    string
+		setup       func() error
 	}{
 		{
 			name:        "create story with number only",
 			number:      123,
 			expectError: false,
+			setup: func() error {
+				if err := configureProject("test-project"); err != nil {
+					return err
+				}
+				return configureUser("john.doe")
+			},
 		},
 		{
 			name:        "create story with number and title",
 			title:       "Test Story",
 			number:      124,
 			expectError: false,
+			setup: func() error {
+				if err := configureProject("test-project"); err != nil {
+					return err
+				}
+				return configureUser("john.doe")
+			},
 		},
 		{
 			name:        "create story with number and description",
 			description: "This is a test story",
 			number:      125,
 			expectError: false,
+			setup: func() error {
+				if err := configureProject("test-project"); err != nil {
+					return err
+				}
+				return configureUser("john.doe")
+			},
 		},
 		{
 			name:        "create story with number and tags",
 			tags:        []string{"test", "feature"},
 			number:      126,
 			expectError: false,
+			setup: func() error {
+				if err := configureProject("test-project"); err != nil {
+					return err
+				}
+				return configureUser("john.doe")
+			},
 		},
 		{
 			name:        "create story without number",
 			title:       "Test Story",
 			expectError: true,
+			setup: func() error {
+				if err := configureProject("test-project"); err != nil {
+					return err
+				}
+				return configureUser("john.doe")
+			},
 		},
 		{
 			name:        "create story with invalid number",
 			title:       "Test Story",
 			number:      0,
 			expectError: true,
+			setup: func() error {
+				if err := configureProject("test-project"); err != nil {
+					return err
+				}
+				return configureUser("john.doe")
+			},
+		},
+		{
+			name:        "create story without project configuration",
+			number:      127,
+			expectError: true,
+			errorMsg:    "project not configured",
+			setup: func() error {
+				// Reset config to empty state
+				cfg := &config.Config{}
+				return config.SaveConfig(cfg)
+			},
+		},
+		{
+			name:        "create story without user configuration",
+			number:      128,
+			expectError: true,
+			errorMsg:    "user not configured",
+			setup: func() error {
+				// Configure only project
+				return configureProject("test-project")
+			},
 		},
 	}
 
@@ -118,6 +176,12 @@ func TestStoryCommand(t *testing.T) {
 			require.NoError(t, err)
 			for _, file := range files {
 				err = os.Remove(filepath.Join(storiesDir, file.Name()))
+				require.NoError(t, err)
+			}
+
+			// Run setup if provided
+			if tt.setup != nil {
+				err = tt.setup()
 				require.NoError(t, err)
 			}
 
@@ -162,6 +226,9 @@ func TestStoryCommand(t *testing.T) {
 
 			if tt.expectError {
 				assert.Error(t, err)
+				if tt.errorMsg != "" {
+					assert.Contains(t, err.Error(), tt.errorMsg)
+				}
 				return
 			}
 

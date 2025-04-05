@@ -26,6 +26,14 @@ var storyNewCmd = &cobra.Command{
 			return fmt.Errorf("failed to load config: %w", err)
 		}
 
+		// Validate project and user configuration
+		if cfg.GitRepo == "" {
+			return fmt.Errorf("project not configured. Please run 'tracer configure project' first")
+		}
+		if cfg.AuthorName == "" {
+			return fmt.Errorf("user not configured. Please run 'tracer configure user' first")
+		}
+
 		// Get flag values
 		title, _ := cmd.Flags().GetString("title")
 		description, _ := cmd.Flags().GetString("description")
