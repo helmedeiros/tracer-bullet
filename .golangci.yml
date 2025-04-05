@@ -1,0 +1,45 @@
+run:
+  timeout: 5m
+  tests: true
+
+issues:
+  exclude-dirs:
+    - vendor/
+  exclude-rules:
+    - path: _test\.go
+      linters:
+        - gocyclo
+        - gosec
+        - gocognit
+        - goconst
+
+linters:
+  enable:
+    - gofmt
+    - govet
+    - errcheck
+    - staticcheck
+    - gosimple
+    - ineffassign
+    - unused
+    - misspell
+    - gosec
+    - gocritic
+    - gocyclo
+    - goimports
+    - revive
+    - gocognit
+    - goconst
+    - gomoddirectives
+    - gomodguard
+
+linters-settings:
+  gocyclo:
+    min-complexity: 15
+  gocognit:
+    min-complexity: 15
+  revive:
+    rules:
+      - name: exported
+        arguments:
+          - disableStutteringCheck

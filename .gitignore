@@ -1,0 +1,59 @@
+# Binaries for programs and plugins
+*.exe
+*.exe~
+*.dll
+*.so
+*.dylib
+tracer
+
+# Test binary, built with `go test -c`
+*.test
+
+# Output of the go coverage tool, specifically when used with LiteIDE
+*.out
+coverage.html
+
+# Go specific
+testdata/
+debug
+__debug_bin
+*.prof
+*.pprof
+*.bench
+bin/
+dist/
+build/
+
+# Dependency directories
+vendor/
+
+# Go workspace file
+go.work
+
+# IDE specific files
+.idea/
+.vscode/
+*.swp
+*.swo
+
+# OS specific files
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+
+# Application specific files
+config.yaml
+*.tmp
+commit_msg.tmp
+stories/
+
+# Test repository files
+test-repo/
+
+# Git commit message temporary files
+.git-commit-msg.tmp
+tracer-bullet
