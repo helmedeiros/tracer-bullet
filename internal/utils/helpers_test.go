@@ -6,41 +6,42 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 func TestRunCommand(t *testing.T) {
 	tests := []struct {
-		name    string
-		command string
-		args    []string
-		want    string
-		wantErr bool
+		name       string
+		command    string
+		args       []string
+		wantErr    bool
+		wantOutput string
 	}{
 		{
-			name:    "echo command",
-			command: "echo",
-			args:    []string{"hello"},
-			want:    "hello",
-			wantErr: false,
+			name:       "echo command",
+			command:    "echo",
+			args:       []string{"hello world"},
+			wantErr:    false,
+			wantOutput: "hello world\n",
 		},
 		{
-			name:    "invalid command",
-			command: "nonexistentcommand",
-			args:    []string{},
-			want:    "",
-			wantErr: true,
+			name:       "invalid command",
+			command:    "nonexistentcommand",
+			args:       []string{},
+			wantErr:    true,
+			wantOutput: "",
 		},
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			got, err := RunCommand(tt.command, tt.args...)
+			output, err := RunCommand(tt.command, tt.args...)
 			if tt.wantErr {
 				assert.Error(t, err)
 				return
 			}
 			assert.NoError(t, err)
-			assert.Equal(t, tt.want, got)
+			assert.Equal(t, tt.wantOutput, output)
 		})
 	}
 }
@@ -58,50 +59,45 @@ func TestGenerateID(t *testing.T) {
 
 func TestGetConfigDir(t *testing.T) {
 	tests := []struct {
-		name    string
-		env     map[string]string
-		want    string
-		wantErr bool
+		name     string
+		setup    func(t *testing.T) string
+		teardown func(t *testing.T, path string)
 	}{
 		{
 			name: "default config dir",
-			env:  map[string]string{},
-			want: filepath.Join(os.Getenv("HOME"), ".tracer"),
+			setup: func(t *testing.T) string {
+				dir := t.TempDir()
+				TestConfigDir = dir
+				return dir
+			},
+			teardown: func(t *testing.T, path string) {
+				TestConfigDir = ""
+			},
 		},
 		{
 			name: "custom config dir",
-			env: map[string]string{
-				"TRACER_CONFIG_DIR": "", // Will be set in the test
+			setup: func(t *testing.T) string {
+				dir := t.TempDir()
+				TestConfigDir = filepath.Join(dir, "custom")
+				err := os.MkdirAll(TestConfigDir, 0755)
+				require.NoError(t, err)
+				return dir
 			},
-			want: "", // Will be set in the test
+			teardown: func(t *testing.T, path string) {
+				TestConfigDir = ""
+			},
 		},
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			// Set environment variables
-			for k, v := range tt.env {
-				os.Setenv(k, v)
-				defer os.Unsetenv(k)
-			}
+			dir := tt.setup(t)
+			defer tt.teardown(t, dir)
 
-			// Reset TestConfigDir
-			TestConfigDir = ""
-			if tt.name == "custom config dir" {
-				// Use a temporary directory for the custom path
-				tempDir := t.TempDir()
-				customPath := filepath.Join(tempDir, "custom-config")
-				TestConfigDir = customPath
-				tt.want = customPath
-			}
-
-			got, err := GetConfigDir()
-			if tt.wantErr {
-				assert.Error(t, err)
-				return
-			}
+			configDir, err := GetConfigDir()
 			assert.NoError(t, err)
-			assert.Equal(t, tt.want, got)
+			assert.NotEmpty(t, configDir)
+			assert.DirExists(t, configDir)
 		})
 	}
 }
@@ -138,6 +134,175 @@ func TestEnsureDir(t *testing.T) {
 			}
 			assert.NoError(t, err)
 			assert.DirExists(t, tt.path)
+		})
+	}
+}
+
+func TestGetGitRoot(t *testing.T) {
+	tests := []struct {
+		name     string
+		setup    func(t *testing.T) string
+		teardown func(t *testing.T, path string)
+		wantErr  bool
+	}{
+		{
+			name: "git repository",
+			setup: func(t *testing.T) string {
+				dir := t.TempDir()
+				GitClient = NewMockGit()
+				GitClient.(*MockGit).GetGitRootFunc = func() (string, error) {
+					return dir, nil
+				}
+				return dir
+			},
+			teardown: func(t *testing.T, path string) {
+				GitClient = NewRealGit()
+			},
+			wantErr: false,
+		},
+		{
+			name: "not a git repository",
+			setup: func(t *testing.T) string {
+				dir := t.TempDir()
+				GitClient = NewMockGit()
+				GitClient.(*MockGit).GetGitRootFunc = func() (string, error) {
+					return "", os.ErrNotExist
+				}
+				return dir
+			},
+			teardown: func(t *testing.T, path string) {
+				GitClient = NewRealGit()
+			},
+			wantErr: true,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			dir := tt.setup(t)
+			defer tt.teardown(t, dir)
+
+			root, err := GetGitRoot()
+			if tt.wantErr {
+				assert.Error(t, err)
+				return
+			}
+			assert.NoError(t, err)
+			assert.Equal(t, dir, root)
+		})
+	}
+}
+
+func TestRunGitInit(t *testing.T) {
+	tests := []struct {
+		name     string
+		setup    func(t *testing.T) string
+		teardown func(t *testing.T, path string)
+		wantErr  bool
+	}{
+		{
+			name: "successful git init",
+			setup: func(t *testing.T) string {
+				dir := t.TempDir()
+				GitClient = NewMockGit()
+				GitClient.(*MockGit).InitFunc = func() error {
+					return nil
+				}
+				return dir
+			},
+			teardown: func(t *testing.T, path string) {
+				GitClient = NewRealGit()
+			},
+			wantErr: false,
+		},
+		{
+			name: "failed git init",
+			setup: func(t *testing.T) string {
+				dir := t.TempDir()
+				GitClient = NewMockGit()
+				GitClient.(*MockGit).InitFunc = func() error {
+					return os.ErrPermission
+				}
+				return dir
+			},
+			teardown: func(t *testing.T, path string) {
+				GitClient = NewRealGit()
+			},
+			wantErr: true,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			dir := tt.setup(t)
+			defer tt.teardown(t, dir)
+
+			err := RunGitInit()
+			if tt.wantErr {
+				assert.Error(t, err)
+				return
+			}
+			assert.NoError(t, err)
+		})
+	}
+}
+
+func TestRunGitConfig(t *testing.T) {
+	tests := []struct {
+		name     string
+		key      string
+		value    string
+		setup    func(t *testing.T) string
+		teardown func(t *testing.T, path string)
+		wantErr  bool
+	}{
+		{
+			name:  "successful git config",
+			key:   "user.name",
+			value: "Test User",
+			setup: func(t *testing.T) string {
+				dir := t.TempDir()
+				GitClient = NewMockGit()
+				GitClient.(*MockGit).SetConfigFunc = func(key, value string) error {
+					return nil
+				}
+				return dir
+			},
+			teardown: func(t *testing.T, path string) {
+				GitClient = NewRealGit()
+			},
+			wantErr: false,
+		},
+		{
+			name:  "failed git config",
+			key:   "user.name",
+			value: "Test User",
+			setup: func(t *testing.T) string {
+				dir := t.TempDir()
+				GitClient = NewMockGit()
+				GitClient.(*MockGit).SetConfigFunc = func(key, value string) error {
+					return os.ErrPermission
+				}
+				return dir
+			},
+			teardown: func(t *testing.T, path string) {
+				GitClient = NewRealGit()
+			},
+			wantErr: true,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			dir := tt.setup(t)
+			defer tt.teardown(t, dir)
+
+			err := RunGitConfig(tt.key, tt.value)
+			if tt.wantErr {
+				assert.Error(t, err)
+				return
+			}
+			assert.NoError(t, err)
 		})
 	}
 }

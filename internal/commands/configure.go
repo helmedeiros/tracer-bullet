@@ -30,21 +30,22 @@ var ConfigureCmd = &cobra.Command{
 			fmt.Println("Successfully configured zsh autocomplete")
 		}
 
-		if projectFlag != "" {
+		// Check if project flag is set but empty
+		if cmd.Flags().Changed("project") {
 			if err := configureProject(projectFlag); err != nil {
 				return fmt.Errorf("failed to configure project: %w", err)
 			}
 			fmt.Printf("Successfully configured project: %s\n", projectFlag)
 		}
 
-		if userFlag != "" {
+		if cmd.Flags().Changed("user") {
 			if err := configureUser(userFlag); err != nil {
 				return fmt.Errorf("failed to configure user: %w", err)
 			}
 			fmt.Printf("Successfully configured user: %s\n", userFlag)
 		}
 
-		if !autocompleteFlag && projectFlag == "" && userFlag == "" {
+		if !autocompleteFlag && !cmd.Flags().Changed("project") && !cmd.Flags().Changed("user") {
 			return cmd.Help()
 		}
 
@@ -102,7 +103,7 @@ func configureProject(projectName string) error {
 	}
 
 	// Set git config
-	_, err = utils.RunCommand("git", "config", "--local", "current.project", projectName)
+	err = utils.GitClient.SetConfig("current.project", projectName)
 	if err != nil {
 		return fmt.Errorf("failed to set git config: %w", err)
 	}
@@ -133,13 +134,13 @@ func configureUser(username string) error {
 	}
 
 	// Get current project name
-	projectName, err := utils.RunCommand("git", "config", "--local", "current.project")
+	projectName, err := utils.GitClient.GetConfig("current.project")
 	if err != nil {
 		return fmt.Errorf("project not configured. Please run 'tracer configure project' first")
 	}
 
 	// Set git config for user
-	_, err = utils.RunCommand("git", "config", "--local", fmt.Sprintf("%s.user", projectName), username)
+	err = utils.GitClient.SetConfig(fmt.Sprintf("%s.user", projectName), username)
 	if err != nil {
 		return fmt.Errorf("failed to set git config for user: %w", err)
 	}

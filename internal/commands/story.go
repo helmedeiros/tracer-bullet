@@ -41,7 +41,14 @@ var storyNewCmd = &cobra.Command{
 		number, _ := cmd.Flags().GetInt("number")
 
 		// Create new story
-		s, err := story.NewStoryWithNumber(title, description, cfg.AuthorName, number)
+		var s *story.Story
+		if !cmd.Flags().Changed("number") {
+			return fmt.Errorf("number must be provided")
+		}
+		if number <= 0 {
+			return fmt.Errorf("number must be greater than 0")
+		}
+		s, err = story.NewStoryWithNumber(title, description, cfg.AuthorName, number)
 		if err != nil {
 			return err
 		}
@@ -398,62 +405,61 @@ var storyDiffCmd = &cobra.Command{
 }
 
 func init() {
-	// Add commands to root
-	StoryCmd.AddCommand(storyNewCmd)
-	StoryCmd.AddCommand(storyAfterHashCmd)
-	StoryCmd.AddCommand(storyByCmd)
-	StoryCmd.AddCommand(storyFilesCmd)
-	StoryCmd.AddCommand(storyCommitsCmd)
-	StoryCmd.AddCommand(storyDiaryCmd)
-	StoryCmd.AddCommand(storyDiffCmd)
-
-	// Add new command flags
+	// Add flags to new command
 	storyNewCmd.Flags().StringP("title", "t", "", "Story title")
 	storyNewCmd.Flags().StringP("description", "d", "", "Story description")
-	storyNewCmd.Flags().StringSlice("tags", []string{}, "Story tags")
+	storyNewCmd.Flags().StringSliceP("tags", "g", []string{}, "Story tags")
 	storyNewCmd.Flags().IntP("number", "n", 0, "Story number")
 	if err := storyNewCmd.MarkFlagRequired("number"); err != nil {
 		panic(fmt.Sprintf("failed to mark number flag as required: %v", err))
 	}
 
-	// Add after-hash command flags
-	storyAfterHashCmd.Flags().String("hash", "", "Commit hash")
-
-	// Add by command flags
-	storyByCmd.Flags().StringP("author", "a", "", "Story author")
-
-	// Add files command flags
-	storyFilesCmd.Flags().StringP("id", "i", "", "Story ID")
-
-	// Add commits command flags
+	// Add flags to commits command
 	storyCommitsCmd.Flags().StringP("id", "i", "", "Story ID")
+	if err := storyCommitsCmd.MarkFlagRequired("id"); err != nil {
+		panic(fmt.Sprintf("failed to mark id flag as required: %v", err))
+	}
 
-	// Add diary command flags
+	// Add flags to after-hash command
+	storyAfterHashCmd.Flags().StringP("hash", "H", "", "Commit hash")
+	if err := storyAfterHashCmd.MarkFlagRequired("hash"); err != nil {
+		panic(fmt.Sprintf("failed to mark hash flag as required: %v", err))
+	}
+
+	// Add flags to by command
+	storyByCmd.Flags().StringP("author", "a", "", "Author name")
+	if err := storyByCmd.MarkFlagRequired("author"); err != nil {
+		panic(fmt.Sprintf("failed to mark author flag as required: %v", err))
+	}
+
+	// Add flags to files command
+	storyFilesCmd.Flags().StringP("id", "i", "", "Story ID")
+	if err := storyFilesCmd.MarkFlagRequired("id"); err != nil {
+		panic(fmt.Sprintf("failed to mark id flag as required: %v", err))
+	}
+
+	// Add flags to diary command
 	storyDiaryCmd.Flags().StringP("id", "i", "", "Story ID")
-	storyDiaryCmd.Flags().String("since", "", "Start time (RFC3339 format)")
-	storyDiaryCmd.Flags().String("until", "", "End time (RFC3339 format)")
+	if err := storyDiaryCmd.MarkFlagRequired("id"); err != nil {
+		panic(fmt.Sprintf("failed to mark id flag as required: %v", err))
+	}
+	storyDiaryCmd.Flags().StringP("start", "s", "", "Start time (RFC3339 format)")
+	storyDiaryCmd.Flags().StringP("end", "e", "", "End time (RFC3339 format)")
 
-	// Add diff command flags
+	// Add flags to diff command
 	storyDiffCmd.Flags().StringP("id", "i", "", "Story ID")
-	storyDiffCmd.Flags().String("from", "", "Start point (RFC3339 format)")
-	storyDiffCmd.Flags().String("to", "", "End point (RFC3339 format)")
-
-	// Handle required flags
-	requiredFlags := map[*cobra.Command][]string{
-		storyNewCmd:       {"number"},
-		storyAfterHashCmd: {"hash"},
-		storyByCmd:        {"author"},
-		storyFilesCmd:     {"id"},
-		storyCommitsCmd:   {"id"},
-		storyDiaryCmd:     {"id"},
-		storyDiffCmd:      {"id"},
+	if err := storyDiffCmd.MarkFlagRequired("id"); err != nil {
+		panic(fmt.Sprintf("failed to mark id flag as required: %v", err))
 	}
+	storyDiffCmd.Flags().StringP("start", "s", "", "Start time (RFC3339 format)")
+	storyDiffCmd.Flags().StringP("end", "e", "", "End time (RFC3339 format)")
 
-	for cmd, flags := range requiredFlags {
-		for _, flag := range flags {
-			if err := cmd.MarkFlagRequired(flag); err != nil {
-				panic(fmt.Sprintf("failed to mark %s flag as required for %s: %v", flag, cmd.Name(), err))
-			}
-		}
-	}
+	// Add subcommands to story command
+	StoryCmd.AddCommand(storyNewCmd)
+	StoryCmd.AddCommand(storyAfterHashCmd)
+	StoryCmd.AddCommand(storyByCmd)
+	StoryCmd.AddCommand(storyFilesCmd)
+	StoryCmd.AddCommand(storyDiaryCmd)
+	StoryCmd.AddCommand(storyDiffCmd)
+	StoryCmd.AddCommand(storyCommitsCmd)
 }

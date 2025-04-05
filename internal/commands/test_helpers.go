@@ -11,11 +11,37 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
+const (
+	TestProjectName = "test-project"
+	TestUserName    = "john.doe"
+	CurrentProject  = "current.project"
+	ProjectUser     = "test-project.user"
+)
+
+// MockGitClient is a mock implementation of the GitClient interface
+type MockGitClient struct {
+	GetGitRootFunc func() (string, error)
+	SetConfigFunc  func(key, value string) error
+	GetConfigFunc  func(key string) (string, error)
+}
+
+func (m *MockGitClient) GetGitRoot() (string, error) {
+	return m.GetGitRootFunc()
+}
+
+func (m *MockGitClient) SetConfig(key, value string) error {
+	return m.SetConfigFunc(key, value)
+}
+
+func (m *MockGitClient) GetConfig(key string) (string, error) {
+	return m.GetConfigFunc(key)
+}
+
 // setupTestEnvironment creates a temporary test environment and returns:
 // - tmpDir: the temporary directory
-// - repoDir: the test repository directory
+// - mockGitClient: the mock git client
 // - originalDir: the original working directory
-func setupTestEnvironment(t *testing.T) (string, string, string) {
+func setupTestEnvironment(t *testing.T) (string, *utils.MockGit, string) {
 	// Get home directory
 	homeDir, err := os.UserHomeDir()
 	require.NoError(t, err)
@@ -58,7 +84,30 @@ func setupTestEnvironment(t *testing.T) (string, string, string) {
 	// Override config directory for tests
 	utils.TestConfigDir = configDir
 
-	return tmpDir, repoDir, originalDir
+	// Create and return mock git client
+	mockGitClient := &utils.MockGit{
+		GetGitRootFunc: func() (string, error) {
+			return repoDir, nil
+		},
+		SetConfigFunc: func(key, value string) error {
+			return nil
+		},
+		GetConfigFunc: func(key string) (string, error) {
+			switch key {
+			case CurrentProject:
+				return TestProjectName, nil
+			case ProjectUser:
+				return TestUserName, nil
+			default:
+				return "", nil
+			}
+		},
+	}
+
+	// Set the mock git client as the global git client
+	utils.GitClient = mockGitClient
+
+	return tmpDir, mockGitClient, originalDir
 }
 
 // cleanupTestEnvironment cleans up the test environment

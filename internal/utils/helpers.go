@@ -6,7 +6,6 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
-	"strings"
 	"time"
 )
 
@@ -17,8 +16,13 @@ const (
 	DefaultFilePerm = 0600
 )
 
-// TestConfigDir is used to override the config directory in tests
-var TestConfigDir string
+var (
+	// TestConfigDir is used to override the config directory during tests
+	TestConfigDir string
+
+	// GitClient is the global git client, can be replaced with a mock for testing
+	GitClient GitOperations = NewRealGit()
+)
 
 // EnsureDir creates a directory if it doesn't exist
 func EnsureDir(path string) error {
@@ -39,20 +43,18 @@ func GetHomeDir() (string, error) {
 
 // GetConfigDir returns the tracer configuration directory
 func GetConfigDir() (string, error) {
-	var configDir string
 	if TestConfigDir != "" {
-		configDir = TestConfigDir
-	} else {
-		home, err := GetHomeDir()
-		if err != nil {
-			return "", err
-		}
-		configDir = filepath.Join(home, ".tracer")
+		return TestConfigDir, nil
+	}
 
-		// Ensure the directory exists only for non-test directories
-		if err := EnsureDir(configDir); err != nil {
-			return "", fmt.Errorf("failed to create config directory: %w", err)
-		}
+	homeDir, err := GetHomeDir()
+	if err != nil {
+		return "", fmt.Errorf("failed to get home directory: %w", err)
+	}
+
+	configDir := filepath.Join(homeDir, ".tracer")
+	if err := EnsureDir(configDir); err != nil {
+		return "", fmt.Errorf("failed to create config directory: %w", err)
 	}
 
 	return configDir, nil
@@ -64,14 +66,17 @@ func FileExists(path string) bool {
 	return !os.IsNotExist(err)
 }
 
-// RunCommand executes a shell command and returns its output
+// RunCommand executes a command and returns its output
 func RunCommand(command string, args ...string) (string, error) {
 	cmd := exec.Command(command, args...)
 	output, err := cmd.CombinedOutput()
 	if err != nil {
-		return "", fmt.Errorf("failed to run command %s: %w", command, err)
+		if exitErr, ok := err.(*exec.ExitError); ok {
+			return "", exitErr
+		}
+		return "", err
 	}
-	return strings.TrimSpace(string(output)), nil
+	return string(output), nil
 }
 
 // GenerateID generates a unique ID using random bytes
@@ -87,38 +92,17 @@ func GenerateID() string {
 
 // RunGitInit initializes a new git repository in the current directory
 func RunGitInit() error {
-	_, err := RunCommand("git", "init")
-	if err != nil {
-		return fmt.Errorf("failed to initialize git repository: %w", err)
-	}
-
-	// Configure git user for tests
-	if err := RunGitConfig("user.name", "Test User"); err != nil {
-		return err
-	}
-	if err := RunGitConfig("user.email", "test@example.com"); err != nil {
-		return err
-	}
-
-	return nil
+	return GitClient.Init()
 }
 
 // RunGitConfig sets a git configuration value
 func RunGitConfig(key, value string) error {
-	_, err := RunCommand("git", "config", "--local", key, value)
-	if err != nil {
-		return fmt.Errorf("failed to set git config %s: %w", key, err)
-	}
-	return nil
+	return GitClient.SetConfig(key, value)
 }
 
 // GetGitRoot returns the root directory of the git repository
 func GetGitRoot() (string, error) {
-	output, err := RunCommand("git", "rev-parse", "--show-toplevel")
-	if err != nil {
-		return "", fmt.Errorf("failed to get git root: %w", err)
-	}
-	return output, nil
+	return GitClient.GetGitRoot()
 }
 
 // GetRepoConfigDir returns the repository-specific configuration directory

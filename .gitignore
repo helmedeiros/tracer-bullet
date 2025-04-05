@@ -57,3 +57,4 @@ test-repo/
 # Git commit message temporary files
 .git-commit-msg.tmp
 tracer-bullet
+config.yaml

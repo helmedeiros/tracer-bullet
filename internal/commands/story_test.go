@@ -86,10 +86,12 @@ func TestStoryCommand(t *testing.T) {
 		{
 			name: "create story without number",
 			flags: map[string]string{
-				"title": "Test Story",
+				"title":       "Test Story",
+				"description": "Test Description",
+				"tags":        "tag1,tag2",
 			},
 			expectError: true,
-			errorMsg:    "number must be greater than 0",
+			errorMsg:    "required flag(s) \"number\" not set",
 		},
 		{
 			name: "create story with invalid number",
@@ -138,13 +140,39 @@ func TestStoryCommand(t *testing.T) {
 			}
 
 			// Create command
-			cmd := storyNewCmd
+			rootCmd := &cobra.Command{Use: "tracer"}
+			cmd := &cobra.Command{
+				Use:   "new",
+				Short: "Create a new story",
+				Long:  `Create a new story with title, description, and other metadata.`,
+				RunE:  storyNewCmd.RunE,
+			}
+			storyCmd := &cobra.Command{
+				Use:   "story",
+				Short: "Manage stories and their tracking",
+			}
+			storyCmd.AddCommand(cmd)
+			rootCmd.AddCommand(storyCmd)
+
+			// Initialize flags
+			cmd.Flags().StringP("title", "t", "", "Story title")
+			cmd.Flags().StringP("description", "d", "", "Story description")
+			cmd.Flags().StringSliceP("tags", "g", []string{}, "Story tags")
+			cmd.Flags().IntP("number", "n", 0, "Story number")
+			if err := cmd.MarkFlagRequired("number"); err != nil {
+				t.Fatalf("failed to mark number flag as required: %v", err)
+			}
 
 			// Set flags
-			err := cmd.Flags().Set("number", tt.flags["number"])
-			require.NoError(t, err)
-			err = cmd.Flags().Set("title", tt.flags["title"])
-			require.NoError(t, err)
+			var err error
+			if number, ok := tt.flags["number"]; ok && number != "" {
+				err = cmd.Flags().Set("number", number)
+				require.NoError(t, err)
+			}
+			if title, ok := tt.flags["title"]; ok {
+				err = cmd.Flags().Set("title", title)
+				require.NoError(t, err)
+			}
 			if description, ok := tt.flags["description"]; ok {
 				err = cmd.Flags().Set("description", description)
 				require.NoError(t, err)
@@ -155,7 +183,8 @@ func TestStoryCommand(t *testing.T) {
 			}
 
 			// Execute command
-			err = cmd.RunE(cmd, tt.args)
+			rootCmd.SetArgs([]string{"story", "new"})
+			err = rootCmd.Execute()
 			if tt.expectError {
 				assert.Error(t, err)
 				if tt.errorMsg != "" {

@@ -39,7 +39,7 @@ func startPair(cmd *cobra.Command, partner string) error {
 	}
 
 	// Set git config for pair
-	_, err := utils.RunCommand("git", "config", "--local", "current.pair", partner)
+	err := utils.GitClient.SetConfig("current.pair", partner)
 	if err != nil {
 		return fmt.Errorf("failed to set pair: %w", err)
 	}
@@ -61,7 +61,7 @@ func startPair(cmd *cobra.Command, partner string) error {
 
 func stopPair(cmd *cobra.Command) error {
 	// Remove git config for pair
-	_, err := utils.RunCommand("git", "config", "--local", "--unset", "current.pair")
+	err := utils.GitClient.SetConfig("current.pair", "")
 	if err != nil {
 		return fmt.Errorf("failed to remove pair: %w", err)
 	}
@@ -83,14 +83,14 @@ func stopPair(cmd *cobra.Command) error {
 
 func showPairStatus(cmd *cobra.Command) error {
 	// Get current pair from git config
-	pairName, err := utils.RunCommand("git", "config", "--local", "current.pair")
+	pairName, err := utils.GitClient.GetConfig("current.pair")
 	if err != nil {
 		fmt.Fprintf(cmd.OutOrStdout(), "No active pair programming session\n")
 		return nil
 	}
 
 	// Get project name
-	projectName, err := utils.RunCommand("git", "config", "--local", "current.project")
+	projectName, err := utils.GitClient.GetConfig("current.project")
 	if err != nil {
 		projectName = "unknown project"
 	}
@@ -102,7 +102,7 @@ func showPairStatus(cmd *cobra.Command) error {
 	}
 
 	// Get current user
-	currentUser, err := utils.RunCommand("git", "config", "--local", fmt.Sprintf("%s.user", projectName))
+	currentUser, err := utils.GitClient.GetConfig(fmt.Sprintf("%s.user", projectName))
 	if err != nil {
 		currentUser = "unknown user"
 	}
@@ -115,7 +115,7 @@ func showPairStatus(cmd *cobra.Command) error {
 
 	// If there's a story associated with the pair, show it
 	if cfg.JiraHost != "" && cfg.JiraProject != "" {
-		storyID, err := utils.RunCommand("git", "config", "--local", fmt.Sprintf("%s.current.story", cfg.JiraProject))
+		storyID, err := utils.GitClient.GetConfig(fmt.Sprintf("%s.current.story", cfg.JiraProject))
 		if err == nil && storyID != "" {
 			fmt.Fprintf(cmd.OutOrStdout(), "  Current Story: %s\n", storyID)
 		}

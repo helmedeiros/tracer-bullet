@@ -54,10 +54,6 @@ func TestLoadConfig(t *testing.T) {
 				err = os.Chdir(dir)
 				assert.NoError(t, err)
 
-				// Initialize Git repository
-				err = utils.RunGitInit()
-				assert.NoError(t, err)
-
 				// Create .tracer directory
 				tracerDir := filepath.Join(dir, ".tracer")
 				err = os.MkdirAll(tracerDir, 0755)
@@ -85,10 +81,6 @@ func TestLoadConfig(t *testing.T) {
 
 				// Change to test directory
 				err = os.Chdir(dir)
-				assert.NoError(t, err)
-
-				// Initialize Git repository
-				err = utils.RunGitInit()
 				assert.NoError(t, err)
 
 				// Create .tracer directory
@@ -198,10 +190,6 @@ func TestSaveConfig(t *testing.T) {
 
 				// Change to test directory
 				err = os.Chdir(dir)
-				assert.NoError(t, err)
-
-				// Initialize Git repository
-				err = utils.RunGitInit()
 				assert.NoError(t, err)
 
 				// Create .tracer directory
@@ -328,10 +316,23 @@ func TestRepositorySpecificConfig(t *testing.T) {
 		require.NoError(t, err)
 	}()
 
+	// Create a mock git client
+	mockGit := utils.NewMockGit()
+	utils.GitClient = mockGit
+
+	// Configure mock behavior
+	mockGit.(*utils.MockGit).GetGitRootFunc = func() (string, error) {
+		wd, err := os.Getwd()
+		if err != nil {
+			return "", err
+		}
+		return wd, nil
+	}
+
 	// Setup first repository
 	err = os.Chdir(repo1Dir)
 	require.NoError(t, err)
-	err = utils.RunGitInit()
+	err = utils.GitClient.Init()
 	require.NoError(t, err)
 
 	// Configure first repository
@@ -346,7 +347,7 @@ func TestRepositorySpecificConfig(t *testing.T) {
 	// Setup second repository
 	err = os.Chdir(repo2Dir)
 	require.NoError(t, err)
-	err = utils.RunGitInit()
+	err = utils.GitClient.Init()
 	require.NoError(t, err)
 
 	// Configure second repository
@@ -373,4 +374,7 @@ func TestRepositorySpecificConfig(t *testing.T) {
 	require.NoError(t, err)
 	assert.Equal(t, "repo2", loadedCfg2.GitRepo)
 	assert.Equal(t, "user2", loadedCfg2.AuthorName)
+
+	// Restore the real git client
+	utils.GitClient = utils.NewRealGit()
 }

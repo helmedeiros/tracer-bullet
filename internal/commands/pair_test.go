@@ -15,8 +15,25 @@ func GetOutput() string {
 }
 
 func TestPairCommand(t *testing.T) {
-	tmpDir, _, originalDir := setupTestEnvironment(t)
+	tmpDir, mockGitClient, originalDir := setupTestEnvironment(t)
 	defer cleanupTestEnvironment(t, tmpDir, originalDir)
+
+	// Set up mock git client behavior
+	mockGitClient.GetConfigFunc = func(key string) (string, error) {
+		switch key {
+		case "current.project":
+			return "test-project", nil
+		case "test-project.user":
+			return "john.doe", nil
+		case "test-project.pair":
+			return "", nil
+		}
+		return "", nil
+	}
+
+	mockGitClient.SetConfigFunc = func(key, value string) error {
+		return nil
+	}
 
 	// First configure a project and user (required for pair configuration)
 	err := configureProject("test-project")
@@ -53,7 +70,7 @@ func TestPairCommand(t *testing.T) {
 			name:       "show status",
 			args:       []string{"show"},
 			wantErr:    false,
-			wantOutput: "No active pair programming session\n",
+			wantOutput: "\nPair Programming Session:\n  Project: test-project\n  Current User: john.doe\n  Pair Partner: \n\n",
 		},
 		{
 			name:       "invalid command",

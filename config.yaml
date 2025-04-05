@@ -1,9 +1,9 @@
-git_repo: trcr
+git_repo: repo2
 git_branch: main
-git_remote: origin
+git_remote: ""
 story_dir: ""
 pair_file: ""
-author_name: ""
+author_name: user2
 author_email: ""
 pair_name: ""
 jira_host: ""

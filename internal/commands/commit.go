@@ -70,7 +70,7 @@ Will create: feat(auth): add login functionality`,
 			cfg, err := config.LoadConfig()
 			if err == nil && cfg.JiraHost != "" && cfg.JiraProject != "" {
 				// Get current story from git config
-				storyID, err := utils.RunCommand("git", "config", "--local", fmt.Sprintf("%s.current.story", cfg.JiraProject))
+				storyID, err := utils.GitClient.GetConfig(fmt.Sprintf("%s.current.story", cfg.JiraProject))
 				if err == nil && storyID != "" {
 					commitMsg.WriteString("\n\nJira: https://")
 					commitMsg.WriteString(cfg.JiraHost)
@@ -103,19 +103,19 @@ Will create: feat(auth): add login functionality`,
 		defer os.Remove(tmpFile)
 
 		// Run git commit
-		_, err = utils.RunCommand("git", "commit", "-F", tmpFile)
+		err = utils.GitClient.Commit(commitMsg.String())
 		if err != nil {
 			return fmt.Errorf("failed to create commit: %w", err)
 		}
 
 		// Get the commit hash
-		commitHash, err := utils.RunCommand("git", "rev-parse", "HEAD")
+		commitHash, err := utils.GitClient.GetCurrentHead()
 		if err != nil {
 			return fmt.Errorf("failed to get commit hash: %w", err)
 		}
 
 		// Get the author
-		author, err := utils.RunCommand("git", "config", "user.name")
+		author, err := utils.GitClient.GetAuthor()
 		if err != nil {
 			return fmt.Errorf("failed to get author: %w", err)
 		}
@@ -123,7 +123,7 @@ Will create: feat(auth): add login functionality`,
 		// If we have a current story, associate this commit with it
 		cfg, err := config.LoadConfig()
 		if err == nil && cfg.JiraHost != "" && cfg.JiraProject != "" {
-			storyID, err := utils.RunCommand("git", "config", "--local", fmt.Sprintf("%s.current.story", cfg.JiraProject))
+			storyID, err := utils.GitClient.GetConfig(fmt.Sprintf("%s.current.story", cfg.JiraProject))
 			if err == nil && storyID != "" {
 				// Load the story
 				s, err := story.LoadStory(storyID)
@@ -132,18 +132,10 @@ Will create: feat(auth): add login functionality`,
 					s.AddCommit(commitHash, commitMsg.String(), author, time.Now())
 
 					// Get changed files
-					files, err := utils.RunCommand("git", "diff", "--name-status", "HEAD~1", "HEAD")
+					files, err := utils.GitClient.GetChangedFiles()
 					if err == nil {
-						for _, line := range strings.Split(files, "\n") {
-							if line == "" {
-								continue
-							}
-							parts := strings.Fields(line)
-							if len(parts) >= 2 {
-								status := parts[0]
-								path := parts[1]
-								s.AddFile(path, status)
-							}
+						for _, file := range files {
+							s.AddFile(file, "M") // Assuming modified for now
 						}
 					}
 
