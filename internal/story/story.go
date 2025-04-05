@@ -37,6 +37,7 @@ type Story struct {
 	Author      string    `json:"author"`
 	Tags        []string  `json:"tags"`
 	JiraKey     string    `json:"jira_key,omitempty"`
+	Number      int       `json:"number,omitempty"`
 	Commits     []Commit  `json:"commits,omitempty"`
 	Files       []File    `json:"files,omitempty"`
 	Filename    string    `json:"-"`
@@ -44,8 +45,26 @@ type Story struct {
 
 // NewStory creates a new story with the given title and description
 func NewStory(title, description, author string) (*Story, error) {
-	if title == "" {
-		return nil, fmt.Errorf("title cannot be empty")
+	now := time.Now()
+	story := &Story{
+		ID:          utils.GenerateID(),
+		Title:       title,
+		Description: description,
+		Status:      "open",
+		CreatedAt:   now,
+		UpdatedAt:   now,
+		Author:      author,
+		Tags:        []string{},
+		Number:      0,
+	}
+
+	return story, nil
+}
+
+// NewStoryWithNumber creates a new story with the given title, description, and number
+func NewStoryWithNumber(title, description, author string, number int) (*Story, error) {
+	if number <= 0 {
+		return nil, fmt.Errorf("number must be greater than 0")
 	}
 
 	now := time.Now()
@@ -58,6 +77,7 @@ func NewStory(title, description, author string) (*Story, error) {
 		UpdatedAt:   now,
 		Author:      author,
 		Tags:        []string{},
+		Number:      number,
 	}
 
 	return story, nil

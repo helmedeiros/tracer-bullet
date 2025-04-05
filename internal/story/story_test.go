@@ -38,34 +38,43 @@ func TestNewStory(t *testing.T) {
 		title       string
 		description string
 		author      string
+		number      int
 		wantErr     bool
 	}{
 		{
-			name:        "valid story",
+			name:    "valid story with number only",
+			number:  123,
+			wantErr: false,
+		},
+		{
+			name:        "valid story with all fields",
 			title:       "Test Story",
 			description: "This is a test story",
 			author:      "test@example.com",
+			number:      124,
 			wantErr:     false,
 		},
 		{
-			name:        "empty title",
-			title:       "",
+			name:        "missing number",
+			title:       "Test Story",
 			description: "This is a test story",
 			author:      "test@example.com",
+			number:      0,
 			wantErr:     true,
 		},
 		{
-			name:        "empty author",
+			name:        "negative number",
 			title:       "Test Story",
 			description: "This is a test story",
-			author:      "",
-			wantErr:     false,
+			author:      "test@example.com",
+			number:      -1,
+			wantErr:     true,
 		},
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			story, err := NewStory(tt.title, tt.description, tt.author)
+			story, err := NewStoryWithNumber(tt.title, tt.description, tt.author, tt.number)
 			if tt.wantErr {
 				assert.Error(t, err)
 				return
@@ -75,6 +84,7 @@ func TestNewStory(t *testing.T) {
 			assert.Equal(t, tt.title, story.Title)
 			assert.Equal(t, tt.description, story.Description)
 			assert.Equal(t, tt.author, story.Author)
+			assert.Equal(t, tt.number, story.Number)
 			assert.Equal(t, "open", story.Status)
 			assert.NotEmpty(t, story.ID)
 			assert.NotZero(t, story.CreatedAt)

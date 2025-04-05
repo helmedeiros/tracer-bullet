@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"strconv"
 	"strings"
 	"testing"
 	"time"
@@ -69,33 +70,41 @@ func TestStoryCommand(t *testing.T) {
 		title       string
 		description string
 		tags        []string
+		number      int
 		expectError bool
 	}{
 		{
-			name:        "create story with title",
+			name:        "create story with number only",
+			number:      123,
+			expectError: false,
+		},
+		{
+			name:        "create story with number and title",
 			title:       "Test Story",
+			number:      124,
 			expectError: false,
 		},
 		{
-			name:        "create story with title and description",
-			title:       "Another Story",
+			name:        "create story with number and description",
 			description: "This is a test story",
+			number:      125,
 			expectError: false,
 		},
 		{
-			name:        "create story with title and tags",
-			title:       "Tagged Story",
+			name:        "create story with number and tags",
 			tags:        []string{"test", "feature"},
+			number:      126,
 			expectError: false,
 		},
 		{
-			name:        "create story without title",
-			description: "Missing title",
+			name:        "create story without number",
+			title:       "Test Story",
 			expectError: true,
 		},
 		{
-			name:        "create story with empty title",
-			title:       "",
+			name:        "create story with invalid number",
+			title:       "Test Story",
+			number:      0,
 			expectError: true,
 		},
 	}
@@ -121,11 +130,12 @@ func TestStoryCommand(t *testing.T) {
 			}
 
 			// Add flags to the command
-			cmd.Flags().StringP("title", "t", "", "Story title (required)")
+			cmd.Flags().StringP("title", "t", "", "Story title")
 			cmd.Flags().StringP("description", "d", "", "Story description")
 			cmd.Flags().StringSlice("tags", []string{}, "Story tags")
-			if err := cmd.MarkFlagRequired("title"); err != nil {
-				t.Fatalf("failed to mark title flag as required: %v", err)
+			cmd.Flags().IntP("number", "n", 0, "Story number")
+			if err := cmd.MarkFlagRequired("number"); err != nil {
+				t.Fatalf("failed to mark number flag as required: %v", err)
 			}
 
 			// Create a buffer to capture output
@@ -134,7 +144,10 @@ func TestStoryCommand(t *testing.T) {
 			cmd.SetErr(&errBuf) // Capture error output
 
 			// Build command arguments
-			args := []string{"--title", tt.title}
+			args := []string{"--number", strconv.Itoa(tt.number)}
+			if tt.title != "" {
+				args = append(args, "--title", tt.title)
+			}
 			if tt.description != "" {
 				args = append(args, "--description", tt.description)
 			}
@@ -149,8 +162,6 @@ func TestStoryCommand(t *testing.T) {
 
 			if tt.expectError {
 				assert.Error(t, err)
-				// Verify the error message is correct but don't print it
-				assert.Contains(t, errBuf.String(), "title cannot be empty", "Error message should indicate title is required")
 				return
 			}
 
@@ -166,6 +177,7 @@ func TestStoryCommand(t *testing.T) {
 			assert.NotEmpty(t, createdStory.ID, "Story ID should not be empty")
 			assert.Equal(t, tt.title, createdStory.Title, "Story title should match")
 			assert.Equal(t, tt.description, createdStory.Description, "Story description should match")
+			assert.Equal(t, tt.number, createdStory.Number, "Story number should match")
 			assert.Equal(t, "john.doe", createdStory.Author, "Story author should match configured user")
 			assert.Equal(t, "open", createdStory.Status, "Story status should be 'open'")
 			if len(tt.tags) > 0 {
@@ -174,7 +186,10 @@ func TestStoryCommand(t *testing.T) {
 
 			// Verify output format
 			output := buf.String()
-			expectedOutput := fmt.Sprintf("Created new story: %s\nTitle: %s\n", createdStory.ID, tt.title)
+			expectedOutput := fmt.Sprintf("Created new story: %s\nNumber: %d\n", createdStory.ID, tt.number)
+			if tt.title != "" {
+				expectedOutput += fmt.Sprintf("Title: %s\n", tt.title)
+			}
 			if tt.description != "" {
 				expectedOutput += fmt.Sprintf("Description: %s\n", tt.description)
 			}

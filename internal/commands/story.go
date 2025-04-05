@@ -30,9 +30,10 @@ var storyNewCmd = &cobra.Command{
 		title, _ := cmd.Flags().GetString("title")
 		description, _ := cmd.Flags().GetString("description")
 		tags, _ := cmd.Flags().GetStringSlice("tags")
+		number, _ := cmd.Flags().GetInt("number")
 
 		// Create new story
-		s, err := story.NewStory(title, description, cfg.AuthorName)
+		s, err := story.NewStoryWithNumber(title, description, cfg.AuthorName, number)
 		if err != nil {
 			return err
 		}
@@ -49,7 +50,10 @@ var storyNewCmd = &cobra.Command{
 
 		// Write output to stdout
 		fmt.Fprintf(cmd.OutOrStdout(), "Created new story: %s\n", s.ID)
-		fmt.Fprintf(cmd.OutOrStdout(), "Title: %s\n", s.Title)
+		fmt.Fprintf(cmd.OutOrStdout(), "Number: %d\n", s.Number)
+		if s.Title != "" {
+			fmt.Fprintf(cmd.OutOrStdout(), "Title: %s\n", s.Title)
+		}
 		if s.Description != "" {
 			fmt.Fprintf(cmd.OutOrStdout(), "Description: %s\n", s.Description)
 		}
@@ -399,8 +403,9 @@ func init() {
 	storyNewCmd.Flags().StringP("title", "t", "", "Story title")
 	storyNewCmd.Flags().StringP("description", "d", "", "Story description")
 	storyNewCmd.Flags().StringSlice("tags", []string{}, "Story tags")
-	if err := storyNewCmd.MarkFlagRequired("title"); err != nil {
-		panic(fmt.Sprintf("failed to mark title flag as required: %v", err))
+	storyNewCmd.Flags().IntP("number", "n", 0, "Story number")
+	if err := storyNewCmd.MarkFlagRequired("number"); err != nil {
+		panic(fmt.Sprintf("failed to mark number flag as required: %v", err))
 	}
 
 	// Add after-hash command flags
@@ -427,7 +432,7 @@ func init() {
 
 	// Handle required flags
 	requiredFlags := map[*cobra.Command][]string{
-		storyNewCmd:       {"title"},
+		storyNewCmd:       {"number"},
 		storyAfterHashCmd: {"hash"},
 		storyByCmd:        {"author"},
 		storyFilesCmd:     {"id"},
