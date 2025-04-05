@@ -159,11 +159,52 @@ func TestListStories(t *testing.T) {
 		assert.NoError(t, err)
 	}()
 
-	// Create some test stories
+	// Get stories directory
+	storiesDir, err := GetStoriesDir()
+	assert.NoError(t, err)
+
+	// Clean up any existing stories
+	err = os.RemoveAll(storiesDir)
+	assert.NoError(t, err)
+	err = os.MkdirAll(storiesDir, 0755)
+	assert.NoError(t, err)
+
+	// Create test stories with proper initialization
+	now := time.Now()
 	stories := []*Story{
-		{ID: "story1", Title: "Story 1", CreatedAt: time.Now(), Filename: "story1.yaml"},
-		{ID: "story2", Title: "Story 2", CreatedAt: time.Now().Add(-time.Hour), Filename: "story2.yaml"},
-		{ID: "story3", Title: "Story 3", CreatedAt: time.Now().Add(-2 * time.Hour), Filename: "story3.yaml"},
+		{
+			ID:          "story1",
+			Title:       "Story 1",
+			Description: "Description 1",
+			Status:      "open",
+			CreatedAt:   now,
+			UpdatedAt:   now,
+			Author:      "test-author",
+			Tags:        []string{},
+			Filename:    "story1.yaml",
+		},
+		{
+			ID:          "story2",
+			Title:       "Story 2",
+			Description: "Description 2",
+			Status:      "open",
+			CreatedAt:   now.Add(-time.Hour),
+			UpdatedAt:   now.Add(-time.Hour),
+			Author:      "test-author",
+			Tags:        []string{},
+			Filename:    "story2.yaml",
+		},
+		{
+			ID:          "story3",
+			Title:       "Story 3",
+			Description: "Description 3",
+			Status:      "open",
+			CreatedAt:   now.Add(-2 * time.Hour),
+			UpdatedAt:   now.Add(-2 * time.Hour),
+			Author:      "test-author",
+			Tags:        []string{},
+			Filename:    "story3.yaml",
+		},
 	}
 
 	// Save the stories
@@ -175,10 +216,28 @@ func TestListStories(t *testing.T) {
 	// Test listing stories
 	loadedStories, err := ListStories()
 	assert.NoError(t, err)
-	assert.Len(t, loadedStories, len(stories))
+	assert.Equal(t, len(stories), len(loadedStories), "Number of stories should match")
 
 	// Verify the stories are sorted by creation date (newest first)
-	for i := 0; i < len(stories)-1; i++ {
-		assert.True(t, loadedStories[i].CreatedAt.After(loadedStories[i+1].CreatedAt))
+	for i := 0; i < len(loadedStories)-1; i++ {
+		assert.True(t, loadedStories[i].CreatedAt.After(loadedStories[i+1].CreatedAt),
+			"Stories should be sorted by creation date (newest first)")
+	}
+
+	// Verify story contents
+	for _, story := range stories {
+		// Find the corresponding loaded story
+		var loadedStory *Story
+		for _, ls := range loadedStories {
+			if ls.ID == story.ID {
+				loadedStory = ls
+				break
+			}
+		}
+		assert.NotNil(t, loadedStory, "Story %s should be found in loaded stories", story.ID)
+		assert.Equal(t, story.Title, loadedStory.Title)
+		assert.Equal(t, story.Description, loadedStory.Description)
+		assert.Equal(t, story.Status, loadedStory.Status)
+		assert.Equal(t, story.Author, loadedStory.Author)
 	}
 }

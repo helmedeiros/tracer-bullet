@@ -1,6 +1,8 @@
 package utils
 
 import (
+	"fmt"
+	"os"
 	"strings"
 )
 
@@ -73,19 +75,81 @@ func NewMockGit() GitOperations {
 
 // Init initializes a git repository
 func (g *RealGit) Init() error {
-	_, err := RunCommand("git", "init")
-	return err
+	// First try to check if we're in a git repository
+	if _, err := RunCommand("git", "rev-parse", "--is-inside-work-tree"); err == nil {
+		return nil
+	}
+
+	// Try to get the git root directory
+	gitRoot, err := g.GetGitRoot()
+	if err != nil {
+		// If we can't get the git root, initialize in the home directory
+		home, err := os.UserHomeDir()
+		if err != nil {
+			return fmt.Errorf("failed to get home directory: %w", err)
+		}
+		gitRoot = home
+	}
+
+	// Initialize git repository in the git root directory
+	_, err = RunCommand("git", "-C", gitRoot, "init")
+	if err != nil {
+		return fmt.Errorf("failed to initialize git repository: %w", err)
+	}
+
+	// Set default branch name to main
+	_, err = RunCommand("git", "-C", gitRoot, "config", "init.defaultBranch", "main")
+	if err != nil {
+		return fmt.Errorf("failed to set default branch: %w", err)
+	}
+
+	return nil
 }
 
 // SetConfig sets a git configuration value
 func (g *RealGit) SetConfig(key, value string) error {
-	_, err := RunCommand("git", "config", key, value)
-	return err
+	// Try to get the git root directory
+	gitRoot, err := g.GetGitRoot()
+	if err != nil {
+		// If we can't get the git root, use the home directory
+		home, err := os.UserHomeDir()
+		if err != nil {
+			return fmt.Errorf("failed to get home directory: %w", err)
+		}
+		gitRoot = home
+	}
+
+	// Set the config value using the git root directory
+	_, err = RunCommand("git", "-C", gitRoot, "config", key, value)
+	if err != nil {
+		return fmt.Errorf("failed to set git config %s: %w", key, err)
+	}
+	return nil
 }
 
 // GetConfig gets a git configuration value
 func (g *RealGit) GetConfig(key string) (string, error) {
-	return RunCommand("git", "config", key)
+	// Try to get the git root directory
+	gitRoot, err := g.GetGitRoot()
+	if err != nil {
+		// If we can't get the git root, use the home directory
+		home, err := os.UserHomeDir()
+		if err != nil {
+			return "", fmt.Errorf("failed to get home directory: %w", err)
+		}
+		gitRoot = home
+	}
+
+	// Get the config value using the git root directory
+	value, err := RunCommand("git", "-C", gitRoot, "config", key)
+	if err != nil {
+		// If the config doesn't exist, return empty string
+		if strings.Contains(err.Error(), "exit status 1") {
+			return "", nil
+		}
+		return "", fmt.Errorf("failed to get git config %s: %w", key, err)
+	}
+	return strings.TrimSpace(value), nil
 }
 
 // ParseRevision parses a git revision
@@ -120,7 +184,16 @@ func (g *RealGit) GetChangedFiles() ([]string, error) {
 
 // GetGitRoot gets the root directory of the git repository
 func (g *RealGit) GetGitRoot() (string, error) {
-	return RunCommand("git", "rev-parse", "--show-toplevel")
+	// Try to get the git root directory
+	output, err := RunCommand("git", "rev-parse", "--show-toplevel")
+	if err != nil {
+		// If we're not in a git repository, try to find the nearest parent git repository
+		output, err = RunCommand("git", "rev-parse", "--git-dir")
+		if err != nil {
+			return "", fmt.Errorf("not in a git repository")
+		}
+	}
+	return strings.TrimSpace(output), nil
 }
 
 // Init initializes a git repository (mock implementation)

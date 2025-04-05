@@ -136,7 +136,12 @@ func configureUser(username string) error {
 	// Get current project name
 	projectName, err := utils.GitClient.GetConfig("current.project")
 	if err != nil {
-		return fmt.Errorf("project not configured. Please run 'tracer configure project' first")
+		return fmt.Errorf("project not configured. Please run 'tracer configure --project' first")
+	}
+
+	// If no project is configured, return error
+	if projectName == "" {
+		return fmt.Errorf("project not configured. Please run 'tracer configure --project' first")
 	}
 
 	// Set git config for user
@@ -145,31 +150,30 @@ func configureUser(username string) error {
 		return fmt.Errorf("failed to set git config for user: %w", err)
 	}
 
-	// Get repository-specific config directory
+	// Try to get repository-specific config directory
 	configDir, err := utils.GetRepoConfigDir()
 	if err != nil {
-		return fmt.Errorf("failed to get repo config directory: %w", err)
+		// If we can't get the repo config dir, use the global config dir
+		configDir, err = utils.GetConfigDir()
+		if err != nil {
+			return fmt.Errorf("failed to get config directory: %w", err)
+		}
 	}
 
-	// Update config file
-	configFile := filepath.Join(configDir, config.DefaultConfigFile)
-	data, err := os.ReadFile(configFile)
-	if err != nil {
-		return fmt.Errorf("project not configured. Please run 'tracer configure project' first")
+	// Create or update config file
+	cfg := &config.Config{
+		GitRepo:    projectName,
+		GitBranch:  config.DefaultGitBranch,
+		GitRemote:  config.DefaultGitRemote,
+		AuthorName: username,
 	}
 
-	var cfg config.Config
-	if err := yaml.Unmarshal(data, &cfg); err != nil {
-		return fmt.Errorf("failed to unmarshal config: %w", err)
-	}
-
-	cfg.AuthorName = username
-
-	data, err = yaml.Marshal(&cfg)
+	data, err := yaml.Marshal(cfg)
 	if err != nil {
 		return fmt.Errorf("failed to marshal config: %w", err)
 	}
 
+	configFile := filepath.Join(configDir, config.DefaultConfigFile)
 	if err := os.WriteFile(configFile, data, utils.DefaultFilePerm); err != nil {
 		return fmt.Errorf("failed to write config file: %w", err)
 	}

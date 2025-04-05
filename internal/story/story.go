@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"sort"
 	"strings"
 	"time"
 
@@ -139,6 +140,11 @@ func ListStories() ([]*Story, error) {
 			stories = append(stories, story)
 		}
 	}
+
+	// Sort stories by creation date in descending order (newest first)
+	sort.Slice(stories, func(i, j int) bool {
+		return stories[i].CreatedAt.After(stories[j].CreatedAt)
+	})
 
 	return stories, nil
 }

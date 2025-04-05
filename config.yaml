@@ -1,9 +1,9 @@
-git_repo: repo2
+git_repo: FN
 git_branch: main
-git_remote: ""
+git_remote: origin
 story_dir: ""
 pair_file: ""
-author_name: user2
+author_name: helmedeiro
 author_email: ""
 pair_name: ""
 jira_host: ""
