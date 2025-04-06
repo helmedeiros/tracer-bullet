@@ -300,3 +300,102 @@ func TestConfigureShow(t *testing.T) {
 	err = rootCmd.Execute()
 	assert.NoError(t, err)
 }
+
+func TestConfigureClean(t *testing.T) {
+	// Create a temporary directory for testing
+	tmpDir := t.TempDir()
+	repoDir := filepath.Join(tmpDir, "repo")
+	err := os.MkdirAll(repoDir, 0755)
+	assert.NoError(t, err)
+
+	// Save current directory
+	currentDir, err := os.Getwd()
+	assert.NoError(t, err)
+
+	// Change to test directory
+	err = os.Chdir(repoDir)
+	assert.NoError(t, err)
+	defer func() {
+		err = os.Chdir(currentDir)
+		assert.NoError(t, err)
+	}()
+
+	// Initialize git repository
+	_, err = utils.RunCommand("git", "init")
+	assert.NoError(t, err)
+
+	// Create a mock git client
+	mockGit := utils.NewMockGit()
+	utils.GitClient = mockGit
+
+	// Configure mock behavior
+	mockGit.(*utils.MockGit).SetConfigFunc = func(key, value string) error {
+		return nil
+	}
+	mockGit.(*utils.MockGit).GetConfigFunc = func(key string) (string, error) {
+		if key == "current.project" {
+			return "test-project", nil
+		}
+		return "", nil
+	}
+	mockGit.(*utils.MockGit).GetGitRootFunc = func() (string, error) {
+		return repoDir, nil
+	}
+
+	// Create repository-specific config directory and file
+	repoConfigDir := filepath.Join(repoDir, ".tracer")
+	err = os.MkdirAll(repoConfigDir, 0755)
+	assert.NoError(t, err)
+
+	repoConfigFile := filepath.Join(repoConfigDir, "config.yaml")
+	repoCfg := &config.Config{
+		GitRepo:   "test-project",
+		GitBranch: config.DefaultGitBranch,
+		GitRemote: config.DefaultGitRemote,
+	}
+	data, err := yaml.Marshal(repoCfg)
+	assert.NoError(t, err)
+	err = os.WriteFile(repoConfigFile, data, utils.DefaultFilePerm)
+	assert.NoError(t, err)
+
+	// Create global config directory and file
+	globalConfigDir := filepath.Join(tmpDir, ".tracer")
+	err = os.MkdirAll(globalConfigDir, 0755)
+	assert.NoError(t, err)
+
+	globalConfigFile := filepath.Join(globalConfigDir, "config.yaml")
+	globalCfg := &config.Config{
+		GitRepo:   "global-project",
+		GitBranch: config.DefaultGitBranch,
+		GitRemote: config.DefaultGitRemote,
+	}
+	data, err = yaml.Marshal(globalCfg)
+	assert.NoError(t, err)
+	err = os.WriteFile(globalConfigFile, data, utils.DefaultFilePerm)
+	assert.NoError(t, err)
+
+	// Override the global config directory for testing
+	utils.TestConfigDir = globalConfigDir
+
+	// Create root command and add configure command
+	rootCmd := &cobra.Command{Use: "tracer"}
+	rootCmd.AddCommand(ConfigureCmd)
+
+	// Set up the command arguments
+	args := []string{"configure", "clean"}
+	rootCmd.SetArgs(args)
+
+	// Execute the command
+	err = rootCmd.Execute()
+	assert.NoError(t, err)
+
+	// Verify that both config files were removed
+	_, err = os.Stat(repoConfigFile)
+	assert.True(t, os.IsNotExist(err))
+
+	_, err = os.Stat(globalConfigFile)
+	assert.True(t, os.IsNotExist(err))
+
+	// Reset test config directory
+	utils.TestConfigDir = ""
+}
