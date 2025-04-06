@@ -82,13 +82,63 @@ var configureShowCmd = &cobra.Command{
 	},
 }
 
+var configureCleanCmd = &cobra.Command{
+	Use:   "clean",
+	Short: "Remove all configurations",
+	Long:  `Remove all tracer configurations, including project, user, and Jira settings.`,
+	RunE: func(cmd *cobra.Command, args []string) error {
+		// Get current project name to clear project-specific configs
+		projectName, err := utils.GitClient.GetConfig("current.project")
+		if err == nil && projectName != "" {
+			// Clear project-specific user config
+			if err := utils.GitClient.SetConfig(fmt.Sprintf("%s.user", projectName), ""); err != nil {
+				return fmt.Errorf("failed to clear project user config: %w", err)
+			}
+		}
+
+		// Get repository-specific config directory first
+		repoConfigDir, err := utils.GetRepoConfigDir()
+		if err == nil {
+			// Remove repository-specific config file
+			repoConfigFile := filepath.Join(repoConfigDir, config.DefaultConfigFile)
+			if err := os.Remove(repoConfigFile); err != nil && !os.IsNotExist(err) {
+				return fmt.Errorf("failed to remove repository config: %w", err)
+			}
+		}
+
+		// Get global config directory
+		globalConfigDir, err := utils.GetConfigDir()
+		if err != nil {
+			return fmt.Errorf("failed to get config directory: %w", err)
+		}
+
+		// Remove global config file
+		globalConfigFile := filepath.Join(globalConfigDir, config.DefaultConfigFile)
+		if err := os.Remove(globalConfigFile); err != nil && !os.IsNotExist(err) {
+			return fmt.Errorf("failed to remove global config: %w", err)
+		}
+
+		// Clear git config
+		if err := utils.GitClient.SetConfig("current.project", ""); err != nil {
+			return fmt.Errorf("failed to clear project config: %w", err)
+		}
+		if err := utils.GitClient.SetConfig("current.pair", ""); err != nil {
+			return fmt.Errorf("failed to clear pair config: %w", err)
+		}
+
+		fmt.Fprintf(cmd.OutOrStdout(), "All configurations have been removed\n")
+		return nil
+	},
+}
+
 func init() {
 	ConfigureCmd.Flags().StringVarP(&projectFlag, "project", "p", "", "Set the project name")
 	ConfigureCmd.Flags().StringVarP(&userFlag, "user", "u", "", "Set the user name")
 	ConfigureCmd.Flags().BoolVarP(&autocompleteFlag, "autocomplete", "a", false, "Configure zsh autocomplete")
 
-	// Add show subcommand
+	// Add subcommands
 	ConfigureCmd.AddCommand(configureShowCmd)
+	ConfigureCmd.AddCommand(configureCleanCmd)
 }
 
 func configureProject(projectName string) error {
