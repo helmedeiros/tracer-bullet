@@ -21,6 +21,7 @@ var RootCmd = &cobra.Command{
 
 func init() {
 	// Add all commands to root
+	RootCmd.AddCommand(InitCmd)
 	RootCmd.AddCommand(ConfigureCmd)
 	RootCmd.AddCommand(PairCmd)
 	RootCmd.AddCommand(StoryCmd)
