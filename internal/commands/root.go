@@ -36,8 +36,14 @@ func Execute() error {
 
 // GenerateZshCompletion generates zsh completion files
 func GenerateZshCompletion() error {
+	// Get the current working directory
+	cwd, err := os.Getwd()
+	if err != nil {
+		return fmt.Errorf("failed to get current working directory: %w", err)
+	}
+
 	// Get the completion directory
-	completionDir := filepath.Join(os.Getenv("BASEDIR"), "completion", "zsh")
+	completionDir := filepath.Join(cwd, "completion", "zsh")
 	if err := os.MkdirAll(completionDir, 0755); err != nil {
 		return fmt.Errorf("failed to create completion directory: %w", err)
 	}

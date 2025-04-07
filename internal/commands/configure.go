@@ -242,35 +242,83 @@ func configureAutocomplete() error {
 		return fmt.Errorf("failed to get home directory: %w", err)
 	}
 
+	// Get absolute path for completion script
+	cwd, err := os.Getwd()
+	if err != nil {
+		return fmt.Errorf("failed to get current working directory: %w", err)
+	}
+
+	// Set TRACER_HOME environment variable
+	if err := os.Setenv("TRACER_HOME", cwd); err != nil {
+		return fmt.Errorf("failed to set TRACER_HOME: %w", err)
+	}
+
 	zshrcPath := filepath.Join(homeDir, ".zshrc")
 	zshrcContent, err := os.ReadFile(zshrcPath)
 	if err != nil {
 		return fmt.Errorf("failed to read .zshrc: %w", err)
 	}
 
+	// Check if TRACER_HOME is already exported
+	exportLine := "export TRACER_HOME=" + cwd
+	tracerHomeConfigured := false
+	lines := strings.Split(string(zshrcContent), "\n")
+	for _, line := range lines {
+		if strings.TrimSpace(line) == strings.TrimSpace(exportLine) {
+			tracerHomeConfigured = true
+			break
+		}
+	}
+
 	// Check if autocomplete is already configured
-	configLine := fmt.Sprintf("fpath=(%s/completion/zsh $fpath)", os.Getenv("BASEDIR"))
-	if strings.Contains(string(zshrcContent), configLine) {
+	configLine := "fpath=($TRACER_HOME/completion/zsh $fpath)"
+	autocompleteConfigured := false
+	for _, line := range lines {
+		if strings.TrimSpace(line) == strings.TrimSpace(configLine) {
+			autocompleteConfigured = true
+			break
+		}
+	}
+
+	if tracerHomeConfigured && autocompleteConfigured {
 		fmt.Println("Autocomplete already configured")
 		return nil
 	}
 
-	// Append autocomplete configuration
-	autocompleteConfig := fmt.Sprintf(`
-# Tracer autocomplete configuration
-fpath=(%s/completion/zsh $fpath)
-autoload -U compinit
-compinit
-`, os.Getenv("BASEDIR"))
-
+	// Append configuration line by line
 	file, err := os.OpenFile(zshrcPath, os.O_APPEND|os.O_WRONLY, 0644)
 	if err != nil {
 		return fmt.Errorf("failed to open .zshrc: %w", err)
 	}
 	defer file.Close()
 
-	if _, err := file.WriteString(autocompleteConfig); err != nil {
-		return fmt.Errorf("failed to write to .zshrc: %w", err)
+	// Add a newline first if the file doesn't end with one
+	if len(zshrcContent) > 0 && zshrcContent[len(zshrcContent)-1] != '\n' {
+		if _, err := file.WriteString("\n"); err != nil {
+			return fmt.Errorf("failed to write newline to .zshrc: %w", err)
+		}
+	}
+
+	// Write TRACER_HOME if not configured
+	if !tracerHomeConfigured {
+		if _, err := file.WriteString(exportLine + "\n"); err != nil {
+			return fmt.Errorf("failed to write TRACER_HOME to .zshrc: %w", err)
+		}
+	}
+
+	// Write autocomplete configuration if not configured
+	if !autocompleteConfigured {
+		lines := []string{
+			configLine,
+			"autoload -U compinit",
+			"compinit",
+		}
+
+		for _, line := range lines {
+			if _, err := file.WriteString(line + "\n"); err != nil {
+				return fmt.Errorf("failed to write to .zshrc: %w", err)
+			}
+		}
 	}
 
 	return nil
