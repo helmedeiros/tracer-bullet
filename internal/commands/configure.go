@@ -262,21 +262,16 @@ func configureAutocomplete() error {
 	// Check if TRACER_HOME is already exported
 	exportLine := "export TRACER_HOME=" + cwd
 	tracerHomeConfigured := false
-	lines := strings.Split(string(zshrcContent), "\n")
-	for _, line := range lines {
-		if strings.TrimSpace(line) == strings.TrimSpace(exportLine) {
-			tracerHomeConfigured = true
-			break
-		}
-	}
-
-	// Check if autocomplete is already configured
-	configLine := "fpath=($TRACER_HOME/completion/zsh $fpath)"
 	autocompleteConfigured := false
+	lines := strings.Split(string(zshrcContent), "\n")
+
 	for _, line := range lines {
-		if strings.TrimSpace(line) == strings.TrimSpace(configLine) {
+		trimmedLine := strings.TrimSpace(line)
+		if trimmedLine == strings.TrimSpace(exportLine) {
+			tracerHomeConfigured = true
+		}
+		if trimmedLine == "fpath=($TRACER_HOME/completion/zsh $fpath)" {
 			autocompleteConfigured = true
-			break
 		}
 	}
 
@@ -285,40 +280,32 @@ func configureAutocomplete() error {
 		return nil
 	}
 
-	// Append configuration line by line
-	file, err := os.OpenFile(zshrcPath, os.O_APPEND|os.O_WRONLY, 0644)
-	if err != nil {
-		return fmt.Errorf("failed to open .zshrc: %w", err)
-	}
-	defer file.Close()
+	// Create a new slice to hold the updated content
+	updatedLines := make([]string, 0, len(lines)+3)
+	updatedLines = append(updatedLines, lines...)
 
-	// Add a newline first if the file doesn't end with one
-	if len(zshrcContent) > 0 && zshrcContent[len(zshrcContent)-1] != '\n' {
-		if _, err := file.WriteString("\n"); err != nil {
-			return fmt.Errorf("failed to write newline to .zshrc: %w", err)
-		}
+	// Add a newline if the file doesn't end with one
+	if len(updatedLines) > 0 && updatedLines[len(updatedLines)-1] != "" {
+		updatedLines = append(updatedLines, "")
 	}
 
-	// Write TRACER_HOME if not configured
+	// Add TRACER_HOME if not configured
 	if !tracerHomeConfigured {
-		if _, err := file.WriteString(exportLine + "\n"); err != nil {
-			return fmt.Errorf("failed to write TRACER_HOME to .zshrc: %w", err)
-		}
+		updatedLines = append(updatedLines, exportLine)
 	}
 
-	// Write autocomplete configuration if not configured
+	// Add autocomplete configuration if not configured
 	if !autocompleteConfigured {
-		lines := []string{
-			configLine,
+		updatedLines = append(updatedLines,
+			"fpath=($TRACER_HOME/completion/zsh $fpath)",
 			"autoload -U compinit",
 			"compinit",
-		}
+		)
+	}
 
-		for _, line := range lines {
-			if _, err := file.WriteString(line + "\n"); err != nil {
-				return fmt.Errorf("failed to write to .zshrc: %w", err)
-			}
-		}
+	// Write the updated content back to the file
+	if err := os.WriteFile(zshrcPath, []byte(strings.Join(updatedLines, "\n")), 0644); err != nil {
+		return fmt.Errorf("failed to write .zshrc: %w", err)
 	}
 
 	return nil
