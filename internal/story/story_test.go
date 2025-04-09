@@ -1,6 +1,7 @@
 package story
 
 import (
+	"fmt"
 	"os"
 	"testing"
 	"time"
@@ -62,6 +63,7 @@ func TestNewStory(t *testing.T) {
 		number      int
 		expectError bool
 		errorMsg    string
+		branchName  string
 	}{
 		{
 			name:        "valid story with number and title",
@@ -70,6 +72,7 @@ func TestNewStory(t *testing.T) {
 			author:      "john.doe",
 			number:      123,
 			expectError: false,
+			branchName:  "test-story",
 		},
 		{
 			name:        "valid story with all fields",
@@ -78,6 +81,7 @@ func TestNewStory(t *testing.T) {
 			author:      "john.doe",
 			number:      124,
 			expectError: false,
+			branchName:  "test-story",
 		},
 		{
 			name:        "missing number",
@@ -97,10 +101,39 @@ func TestNewStory(t *testing.T) {
 			expectError: true,
 			errorMsg:    "title is required when creating a story with a number",
 		},
+		{
+			name:        "story with special characters",
+			title:       "Test Story: Fix Bug #123",
+			description: "Test Description",
+			author:      "john.doe",
+			number:      126,
+			expectError: false,
+			branchName:  "test-story-fix-bug-123",
+		},
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
+			// Set up mock git client
+			originalGitClient := utils.GitClient
+			defer func() {
+				utils.GitClient = originalGitClient
+			}()
+
+			mockGit := utils.NewMockGit()
+			utils.GitClient = mockGit.(*utils.MockGit)
+
+			// Configure mock behavior
+			mockGit.(*utils.MockGit).BranchExistsFunc = func(branchName string) (bool, error) {
+				return false, nil
+			}
+			mockGit.(*utils.MockGit).CreateBranchFunc = func(branchName string) error {
+				if tt.branchName != "" {
+					assert.Equal(t, tt.branchName, branchName)
+				}
+				return nil
+			}
+
 			story, err := NewStoryWithNumber(tt.title, tt.description, tt.author, tt.number)
 			if tt.expectError {
 				assert.Error(t, err)
@@ -122,6 +155,52 @@ func TestNewStory(t *testing.T) {
 			assert.Empty(t, story.Tags)
 		})
 	}
+}
+
+func TestNewStory_BranchExists(t *testing.T) {
+	// Set up mock git client
+	originalGitClient := utils.GitClient
+	defer func() {
+		utils.GitClient = originalGitClient
+	}()
+
+	mockGit := utils.NewMockGit()
+	utils.GitClient = mockGit.(*utils.MockGit)
+
+	// Configure mock behavior
+	mockGit.(*utils.MockGit).BranchExistsFunc = func(branchName string) (bool, error) {
+		return true, nil
+	}
+	mockGit.(*utils.MockGit).SwitchBranchFunc = func(branchName string) error {
+		assert.Equal(t, "test-story", branchName)
+		return nil
+	}
+
+	// Create a story
+	story, err := NewStory("Test Story", "Test Description", "john.doe")
+	require.NoError(t, err)
+	assert.NotNil(t, story)
+}
+
+func TestNewStory_NoGitRepo(t *testing.T) {
+	// Set up mock git client
+	originalGitClient := utils.GitClient
+	defer func() {
+		utils.GitClient = originalGitClient
+	}()
+
+	mockGit := utils.NewMockGit()
+	utils.GitClient = mockGit.(*utils.MockGit)
+
+	// Configure mock behavior to simulate not being in a git repo
+	mockGit.(*utils.MockGit).BranchExistsFunc = func(branchName string) (bool, error) {
+		return false, fmt.Errorf("not a git repository")
+	}
+
+	// Create a story - should still work even though git operations fail
+	story, err := NewStory("Test Story", "Test Description", "john.doe")
+	require.NoError(t, err)
+	assert.NotNil(t, story)
 }
 
 func TestSaveAndLoadStory(t *testing.T) {
