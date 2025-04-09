@@ -73,36 +73,12 @@ func NewMockGit() GitOperations {
 	}
 }
 
-// Init initializes a git repository
+// Init checks if we're in a git repository
 func (g *RealGit) Init() error {
-	// First try to check if we're in a git repository
-	if _, err := RunCommand("git", "rev-parse", "--is-inside-work-tree"); err == nil {
-		return nil
+	// Check if we're in a git repository
+	if _, err := RunCommand("git", "rev-parse", "--is-inside-work-tree"); err != nil {
+		return fmt.Errorf("not in a git repository: %w", err)
 	}
-
-	// Try to get the git root directory
-	gitRoot, err := g.GetGitRoot()
-	if err != nil {
-		// If we can't get the git root, initialize in the home directory
-		home, err := os.UserHomeDir()
-		if err != nil {
-			return fmt.Errorf("failed to get home directory: %w", err)
-		}
-		gitRoot = home
-	}
-
-	// Initialize git repository in the git root directory
-	_, err = RunCommand("git", "-C", gitRoot, "init")
-	if err != nil {
-		return fmt.Errorf("failed to initialize git repository: %w", err)
-	}
-
-	// Set default branch name to main
-	_, err = RunCommand("git", "-C", gitRoot, "config", "init.defaultBranch", "main")
-	if err != nil {
-		return fmt.Errorf("failed to set default branch: %w", err)
-	}
-
 	return nil
 }
 

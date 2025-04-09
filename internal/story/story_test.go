@@ -22,13 +22,33 @@ func setupTestRepo(t *testing.T) string {
 	err = os.Chdir(dir)
 	assert.NoError(t, err)
 
-	// Initialize git repository using existing helper
+	// Save the original git client
+	originalGitClient := utils.GitClient
+
+	// Create and set up mock git client
+	mockGit := utils.NewMockGit()
+	utils.GitClient = mockGit.(*utils.MockGit)
+
+	// Configure mock behavior
+	mockGit.(*utils.MockGit).GetGitRootFunc = func() (string, error) {
+		return dir, nil
+	}
+	mockGit.(*utils.MockGit).InitFunc = func() error {
+		return nil
+	}
+
+	// Initialize mock git repository
 	err = utils.RunGitInit()
 	assert.NoError(t, err)
 
 	// Return to original directory
 	err = os.Chdir(currentDir)
 	assert.NoError(t, err)
+
+	// Restore the original git client when the test is done
+	t.Cleanup(func() {
+		utils.GitClient = originalGitClient
+	})
 
 	return dir
 }
