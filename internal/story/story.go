@@ -59,6 +59,14 @@ func NewStory(title, description, author string) (*Story, error) {
 		Number:      0,
 	}
 
+	// Try to create a git branch for the story
+	branchName := utils.GenerateBranchName(title, story.ID)
+	if err := utils.CreateBranch(branchName); err != nil {
+		// If we can't create a branch, it's not a critical error
+		// The story will still be created, but we'll log the error
+		fmt.Printf("Warning: Failed to create git branch: %v\n", err)
+	}
+
 	return story, nil
 }
 
@@ -83,6 +91,14 @@ func NewStoryWithNumber(title, description, author string, number int) (*Story, 
 		Author:      author,
 		Tags:        []string{},
 		Number:      number,
+	}
+
+	// Try to create a git branch for the story
+	branchName := utils.GenerateBranchName(title, story.ID)
+	if err := utils.CreateBranch(branchName); err != nil {
+		// If we can't create a branch, it's not a critical error
+		// The story will still be created, but we'll log the error
+		fmt.Printf("Warning: Failed to create git branch: %v\n", err)
 	}
 
 	return story, nil

@@ -3,6 +3,7 @@ package utils
 import (
 	"fmt"
 	"os"
+	"os/exec"
 	"strings"
 )
 
@@ -17,6 +18,9 @@ type GitOperations interface {
 	GetAuthor() (string, error)
 	GetChangedFiles() ([]string, error)
 	GetGitRoot() (string, error)
+	CreateBranch(branchName string) error
+	SwitchBranch(branchName string) error
+	BranchExists(branchName string) (bool, error)
 }
 
 // RealGit implements GitOperations using actual git commands
@@ -38,6 +42,9 @@ type MockGit struct {
 	GetAuthorFunc       func() (string, error)
 	GetChangedFilesFunc func() ([]string, error)
 	GetGitRootFunc      func() (string, error)
+	CreateBranchFunc    func(branchName string) error
+	SwitchBranchFunc    func(branchName string) error
+	BranchExistsFunc    func(branchName string) (bool, error)
 }
 
 // NewMockGit creates a new MockGit instance
@@ -69,6 +76,15 @@ func NewMockGit() GitOperations {
 		},
 		GetGitRootFunc: func() (string, error) {
 			return "", nil
+		},
+		CreateBranchFunc: func(branchName string) error {
+			return nil
+		},
+		SwitchBranchFunc: func(branchName string) error {
+			return nil
+		},
+		BranchExistsFunc: func(branchName string) (bool, error) {
+			return false, nil
 		},
 	}
 }
@@ -172,6 +188,30 @@ func (g *RealGit) GetGitRoot() (string, error) {
 	return strings.TrimSpace(output), nil
 }
 
+// CreateBranch creates a new git branch
+func (g *RealGit) CreateBranch(branchName string) error {
+	_, err := RunCommand("git", "checkout", "-b", branchName)
+	return err
+}
+
+// SwitchBranch switches to an existing git branch
+func (g *RealGit) SwitchBranch(branchName string) error {
+	_, err := RunCommand("git", "checkout", branchName)
+	return err
+}
+
+// BranchExists checks if a branch exists
+func (g *RealGit) BranchExists(branchName string) (bool, error) {
+	_, err := RunCommand("git", "show-ref", "--verify", "--quiet", "refs/heads/"+branchName)
+	if err != nil {
+		if exitErr, ok := err.(*exec.ExitError); ok && exitErr.ExitCode() == 1 {
+			return false, nil
+		}
+		return false, err
+	}
+	return true, nil
+}
+
 // Init initializes a git repository (mock implementation)
 func (g *MockGit) Init() error {
 	if g.InitFunc != nil {
@@ -242,6 +282,30 @@ func (g *MockGit) GetGitRoot() (string, error) {
 		return g.GetGitRootFunc()
 	}
 	return "", nil
+}
+
+// CreateBranch creates a new git branch (mock implementation)
+func (g *MockGit) CreateBranch(branchName string) error {
+	if g.CreateBranchFunc != nil {
+		return g.CreateBranchFunc(branchName)
+	}
+	return nil
+}
+
+// SwitchBranch switches to an existing git branch (mock implementation)
+func (g *MockGit) SwitchBranch(branchName string) error {
+	if g.SwitchBranchFunc != nil {
+		return g.SwitchBranchFunc(branchName)
+	}
+	return nil
+}
+
+// BranchExists checks if a branch exists (mock implementation)
+func (g *MockGit) BranchExists(branchName string) (bool, error) {
+	if g.BranchExistsFunc != nil {
+		return g.BranchExistsFunc(branchName)
+	}
+	return false, nil
 }
 
 // splitLines splits a string into lines and trims whitespace

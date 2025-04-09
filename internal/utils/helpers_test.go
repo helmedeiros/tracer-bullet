@@ -704,3 +704,137 @@ func TestParseRevision(t *testing.T) {
 		})
 	}
 }
+
+func TestGenerateBranchName(t *testing.T) {
+	tests := []struct {
+		name     string
+		title    string
+		id       string
+		expected string
+	}{
+		{
+			name:     "simple title",
+			title:    "Test Story",
+			id:       "story-123",
+			expected: "test-story",
+		},
+		{
+			name:     "title with special characters",
+			title:    "Test Story: Fix Bug #123",
+			id:       "story-123",
+			expected: "test-story-fix-bug-123",
+		},
+		{
+			name:     "title with multiple spaces",
+			title:    "Test  Story  With  Spaces",
+			id:       "story-123",
+			expected: "test-story-with-spaces",
+		},
+		{
+			name:     "empty title uses ID",
+			title:    "",
+			id:       "story-123",
+			expected: "story-123",
+		},
+		{
+			name:     "title with underscores",
+			title:    "test_story_with_underscores",
+			id:       "story-123",
+			expected: "test-story-with-underscores",
+		},
+		{
+			name:     "title with dots",
+			title:    "test.story.with.dots",
+			id:       "story-123",
+			expected: "test-story-with-dots",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			result := GenerateBranchName(tt.title, tt.id)
+			assert.Equal(t, tt.expected, result)
+		})
+	}
+}
+
+func TestCreateBranch(t *testing.T) {
+	tests := []struct {
+		name          string
+		branchName    string
+		branchExists  bool
+		createError   error
+		switchError   error
+		existsError   error
+		expectedError bool
+	}{
+		{
+			name:          "create new branch",
+			branchName:    "test-branch",
+			branchExists:  false,
+			expectedError: false,
+		},
+		{
+			name:          "switch to existing branch",
+			branchName:    "test-branch",
+			branchExists:  true,
+			expectedError: false,
+		},
+		{
+			name:          "error checking branch existence",
+			branchName:    "test-branch",
+			existsError:   fmt.Errorf("git error"),
+			expectedError: true,
+		},
+		{
+			name:          "error creating branch",
+			branchName:    "test-branch",
+			branchExists:  false,
+			createError:   fmt.Errorf("git error"),
+			expectedError: true,
+		},
+		{
+			name:          "error switching branch",
+			branchName:    "test-branch",
+			branchExists:  true,
+			switchError:   fmt.Errorf("git error"),
+			expectedError: true,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			// Save current GitClient
+			originalGitClient := GitClient
+			defer func() {
+				GitClient = originalGitClient
+			}()
+
+			// Use mock Git client
+			GitClient = NewMockGit()
+			mockGit := GitClient.(*MockGit)
+
+			// Configure mock behavior
+			mockGit.BranchExistsFunc = func(branchName string) (bool, error) {
+				assert.Equal(t, tt.branchName, branchName)
+				return tt.branchExists, tt.existsError
+			}
+			mockGit.CreateBranchFunc = func(branchName string) error {
+				assert.Equal(t, tt.branchName, branchName)
+				return tt.createError
+			}
+			mockGit.SwitchBranchFunc = func(branchName string) error {
+				assert.Equal(t, tt.branchName, branchName)
+				return tt.switchError
+			}
+
+			// Test branch creation
+			err := CreateBranch(tt.branchName)
+			if tt.expectedError {
+				assert.Error(t, err)
+				return
+			}
+			assert.NoError(t, err)
+		})
+	}
+}
