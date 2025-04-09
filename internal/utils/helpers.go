@@ -6,6 +6,7 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
+	"strings"
 	"time"
 )
 
@@ -155,4 +156,56 @@ func checkDirWritable(dir string) error {
 	}
 
 	return nil
+}
+
+// CreateBranch creates a new git branch and switches to it
+func CreateBranch(branchName string) error {
+	// Check if branch already exists
+	exists, err := GitClient.BranchExists(branchName)
+	if err != nil {
+		return fmt.Errorf("failed to check if branch exists: %w", err)
+	}
+
+	if exists {
+		// If branch exists, just switch to it
+		return GitClient.SwitchBranch(branchName)
+	}
+
+	// Create and switch to new branch
+	return GitClient.CreateBranch(branchName)
+}
+
+// GenerateBranchName generates a kebab-case branch name from a story title or ID
+func GenerateBranchName(title string, id string) string {
+	// Use title if available, otherwise use ID
+	name := title
+	if name == "" {
+		name = id
+	}
+
+	// Convert to kebab case
+	name = strings.ToLower(name)
+	name = strings.ReplaceAll(name, " ", "-")
+	name = strings.ReplaceAll(name, "_", "-")
+	name = strings.ReplaceAll(name, ".", "-")
+	name = strings.ReplaceAll(name, "/", "-")
+	name = strings.ReplaceAll(name, "\\", "-")
+	name = strings.ReplaceAll(name, ":", "-")
+	name = strings.ReplaceAll(name, "*", "-")
+	name = strings.ReplaceAll(name, "?", "-")
+	name = strings.ReplaceAll(name, "\"", "-")
+	name = strings.ReplaceAll(name, "<", "-")
+	name = strings.ReplaceAll(name, ">", "-")
+	name = strings.ReplaceAll(name, "|", "-")
+	name = strings.ReplaceAll(name, "#", "-")
+
+	// Remove any consecutive dashes
+	for strings.Contains(name, "--") {
+		name = strings.ReplaceAll(name, "--", "-")
+	}
+
+	// Remove leading and trailing dashes
+	name = strings.Trim(name, "-")
+
+	return name
 }
