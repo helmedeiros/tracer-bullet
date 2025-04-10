@@ -209,29 +209,84 @@ func ToKebabCase(s string) string {
 	return strings.Trim(s, "-")
 }
 
+// BranchType represents the type of branch (e.g., feature, bugfix, etc.)
+type BranchType string
+
+const (
+	// FeatureBranch represents a feature branch
+	FeatureBranch BranchType = "features"
+	// BugfixBranch represents a bugfix branch
+	BugfixBranch BranchType = "bugfix"
+)
+
+// BranchName represents a git branch name with its components
+type BranchName struct {
+	Type    BranchType
+	Project string
+	Number  int
+	Name    string
+	ID      string
+}
+
+// NewBranchName creates a new BranchName instance
+func NewBranchName(project string, number int, name string) *BranchName {
+	return &BranchName{
+		Type:    FeatureBranch,
+		Project: project,
+		Number:  number,
+		Name:    name,
+	}
+}
+
+// String returns the formatted branch name
+func (b *BranchName) String() string {
+	// Convert name to kebab case
+	name := ToKebabCase(b.Name)
+	if name == "" {
+		name = b.ID
+	}
+
+	// Build branch name components
+	var parts []string
+	parts = append(parts, string(b.Type))
+
+	// Build the branch name part
+	var nameParts []string
+	if b.Project != "" {
+		nameParts = append(nameParts, b.Project)
+	}
+	if b.Number > 0 {
+		nameParts = append(nameParts, fmt.Sprintf("%d", b.Number))
+	}
+	nameParts = append(nameParts, name)
+
+	parts = append(parts, strings.Join(nameParts, "-"))
+	return strings.Join(parts, "/")
+}
+
+// IsValid checks if the branch name is valid
+func (b *BranchName) IsValid() bool {
+	if b.Type == "" {
+		return false
+	}
+	if b.Name == "" && b.ID == "" {
+		return false
+	}
+	return true
+}
+
 // GenerateBranchName generates a kebab-case branch name from a story title or ID
 func GenerateBranchName(title string, id string, number int, project string) string {
-	// Use title if available, otherwise use ID
-	name := title
-	if name == "" {
-		name = id
+	// Create a new branch name instance
+	branch := NewBranchName(project, number, title)
+	branch.ID = id
+
+	// Validate the branch name
+	if !branch.IsValid() {
+		return ""
 	}
 
-	// Convert to kebab case
-	name = ToKebabCase(name)
-
-	// If number is provided, prepend it to the name
-	if number > 0 {
-		name = fmt.Sprintf("%d-%s", number, name)
-	}
-
-	// If project is provided, prepend it to the name
-	if project != "" {
-		name = fmt.Sprintf("%s-%s", project, name)
-	}
-
-	// Prepend features/ to the branch name
-	return "features/" + name
+	return branch.String()
 }
 
 // GetProjectName returns the current project name from git config
