@@ -61,27 +61,30 @@ func TestNewStory(t *testing.T) {
 		description string
 		author      string
 		number      int
+		project     string
 		expectError bool
 		errorMsg    string
 		branchName  string
 	}{
 		{
-			name:        "valid story with number and title",
+			name:        "valid story with number and title and project",
 			title:       "Test Story",
 			description: "Test Description",
 			author:      "john.doe",
 			number:      123,
+			project:     "my-project",
 			expectError: false,
-			branchName:  "features/test-story",
+			branchName:  "features/my-project-123-test-story",
 		},
 		{
-			name:        "valid story with all fields",
+			name:        "valid story with all fields and project",
 			title:       "Test Story",
 			description: "Test Description",
 			author:      "john.doe",
 			number:      124,
+			project:     "my-project",
 			expectError: false,
-			branchName:  "features/test-story",
+			branchName:  "features/my-project-124-test-story",
 		},
 		{
 			name:        "missing number",
@@ -89,6 +92,7 @@ func TestNewStory(t *testing.T) {
 			description: "Test Description",
 			author:      "john.doe",
 			number:      0,
+			project:     "my-project",
 			expectError: true,
 			errorMsg:    "number must be greater than 0",
 		},
@@ -98,17 +102,29 @@ func TestNewStory(t *testing.T) {
 			description: "Test Description",
 			author:      "john.doe",
 			number:      125,
+			project:     "my-project",
 			expectError: true,
 			errorMsg:    "title is required when creating a story with a number",
 		},
 		{
-			name:        "story with special characters",
+			name:        "story with special characters and project",
 			title:       "Test Story: Fix Bug #123",
 			description: "Test Description",
 			author:      "john.doe",
 			number:      126,
+			project:     "my-project",
 			expectError: false,
-			branchName:  "features/test-story-fix-bug-123",
+			branchName:  "features/my-project-126-test-story-fix-bug-123",
+		},
+		{
+			name:        "valid story with number and title without project",
+			title:       "Test Story",
+			description: "Test Description",
+			author:      "john.doe",
+			number:      127,
+			project:     "",
+			expectError: false,
+			branchName:  "features/127-test-story",
 		},
 	}
 
@@ -132,6 +148,12 @@ func TestNewStory(t *testing.T) {
 					assert.Equal(t, tt.branchName, branchName)
 				}
 				return nil
+			}
+			mockGit.(*utils.MockGit).GetConfigFunc = func(key string) (string, error) {
+				if key == "current.project" {
+					return tt.project, nil
+				}
+				return "", nil
 			}
 
 			story, err := NewStoryWithNumber(tt.title, tt.description, tt.author, tt.number)
@@ -172,12 +194,18 @@ func TestNewStory_BranchExists(t *testing.T) {
 		return true, nil
 	}
 	mockGit.(*utils.MockGit).SwitchBranchFunc = func(branchName string) error {
-		assert.Equal(t, "features/test-story", branchName)
+		assert.Equal(t, "features/my-project-123-test-story", branchName)
 		return nil
+	}
+	mockGit.(*utils.MockGit).GetConfigFunc = func(key string) (string, error) {
+		if key == "current.project" {
+			return "my-project", nil
+		}
+		return "", nil
 	}
 
 	// Create a story
-	story, err := NewStory("Test Story", "Test Description", "john.doe")
+	story, err := NewStoryWithNumber("Test Story", "Test Description", "john.doe", 123)
 	require.NoError(t, err)
 	assert.NotNil(t, story)
 }

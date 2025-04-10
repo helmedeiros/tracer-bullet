@@ -710,49 +710,87 @@ func TestGenerateBranchName(t *testing.T) {
 		name     string
 		title    string
 		id       string
+		number   int
+		project  string
 		expected string
 	}{
 		{
-			name:     "simple title",
+			name:     "simple title with number and project",
 			title:    "Test Story",
 			id:       "story-123",
-			expected: "features/test-story",
+			number:   123,
+			project:  "my-project",
+			expected: "features/my-project-123-test-story",
 		},
 		{
-			name:     "title with special characters",
+			name:     "title with special characters and number and project",
 			title:    "Test Story: Fix Bug #123",
-			id:       "story-123",
-			expected: "features/test-story-fix-bug-123",
+			id:       "story-124",
+			number:   124,
+			project:  "my-project",
+			expected: "features/my-project-124-test-story-fix-bug-123",
 		},
 		{
-			name:     "title with multiple spaces",
+			name:     "title with multiple spaces and number and project",
 			title:    "Test  Story  With  Spaces",
-			id:       "story-123",
-			expected: "features/test-story-with-spaces",
+			id:       "story-125",
+			number:   125,
+			project:  "my-project",
+			expected: "features/my-project-125-test-story-with-spaces",
 		},
 		{
-			name:     "empty title uses ID",
+			name:     "empty title uses ID with number and project",
 			title:    "",
-			id:       "story-123",
-			expected: "features/story-123",
+			id:       "story-126",
+			number:   126,
+			project:  "my-project",
+			expected: "features/my-project-126-story-126",
 		},
 		{
-			name:     "title with underscores",
+			name:     "title with underscores and number and project",
 			title:    "test_story_with_underscores",
-			id:       "story-123",
-			expected: "features/test-story-with-underscores",
+			id:       "story-127",
+			number:   127,
+			project:  "my-project",
+			expected: "features/my-project-127-test-story-with-underscores",
 		},
 		{
-			name:     "title with dots",
+			name:     "title with dots and number and project",
 			title:    "test.story.with.dots",
-			id:       "story-123",
-			expected: "features/test-story-with-dots",
+			id:       "story-128",
+			number:   128,
+			project:  "my-project",
+			expected: "features/my-project-128-test-story-with-dots",
+		},
+		{
+			name:     "simple title with number and no project",
+			title:    "Test Story",
+			id:       "story-129",
+			number:   129,
+			project:  "",
+			expected: "features/129-test-story",
+		},
+		{
+			name:     "simple title without number and with project",
+			title:    "Test Story",
+			id:       "story-130",
+			number:   0,
+			project:  "my-project",
+			expected: "features/my-project-test-story",
+		},
+		{
+			name:     "simple title without number and without project",
+			title:    "Test Story",
+			id:       "story-131",
+			number:   0,
+			project:  "",
+			expected: "features/test-story",
 		},
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			result := GenerateBranchName(tt.title, tt.id)
+			result := GenerateBranchName(tt.title, tt.id, tt.number, tt.project)
 			assert.Equal(t, tt.expected, result)
 		})
 	}
