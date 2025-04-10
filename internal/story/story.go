@@ -60,7 +60,7 @@ func NewStory(title, description, author string) (*Story, error) {
 	}
 
 	// Get project name from git config
-	projectName, _ := utils.GitClient.GetConfig("current.project")
+	projectName, _ := utils.GetProjectName()
 
 	// Try to create a git branch for the story
 	branchName := utils.GenerateBranchName(title, story.ID, story.Number, projectName)
@@ -97,7 +97,7 @@ func NewStoryWithNumber(title, description, author string, number int) (*Story, 
 	}
 
 	// Get project name from git config
-	projectName, _ := utils.GitClient.GetConfig("current.project")
+	projectName, _ := utils.GetProjectName()
 
 	// Try to create a git branch for the story
 	branchName := utils.GenerateBranchName(title, story.ID, story.Number, projectName)

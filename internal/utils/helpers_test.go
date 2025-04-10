@@ -876,3 +876,37 @@ func TestCreateBranch(t *testing.T) {
 		})
 	}
 }
+
+// SetupMockGit creates and configures a mock git client for testing
+func SetupMockGit(t *testing.T, projectName string) func() {
+	// Save current GitClient
+	originalGitClient := GitClient
+	t.Cleanup(func() {
+		GitClient = originalGitClient
+	})
+
+	// Create mock git client
+	mockGit := NewMockGit()
+	GitClient = mockGit.(*MockGit)
+
+	// Configure default mock behavior
+	mockGit.(*MockGit).BranchExistsFunc = func(branchName string) (bool, error) {
+		return false, nil
+	}
+	mockGit.(*MockGit).CreateBranchFunc = func(branchName string) error {
+		return nil
+	}
+	mockGit.(*MockGit).GetConfigFunc = func(key string) (string, error) {
+		if key == "current.project" {
+			return projectName, nil
+		}
+		return "", nil
+	}
+	mockGit.(*MockGit).GetGitRootFunc = func() (string, error) {
+		return t.TempDir(), nil
+	}
+
+	return func() {
+		GitClient = originalGitClient
+	}
+}
