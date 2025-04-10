@@ -207,5 +207,6 @@ func GenerateBranchName(title string, id string) string {
 	// Remove leading and trailing dashes
 	name = strings.Trim(name, "-")
 
-	return name
+	// Prepend features/ to the branch name
+	return "features/" + name
 }
