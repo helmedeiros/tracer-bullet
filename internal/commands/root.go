@@ -11,22 +11,37 @@ import (
 var RootCmd = &cobra.Command{
 	Use:   "tracer",
 	Short: "Tracer Bullet - A developer productivity tool",
-	Long: `Tracer Bullet helps developers manage their workflow by providing tools for:
-- Story tracking and management
-- Pair programming session management
-- Jira integration and synchronization
-- Git workflow automation
-- Conventional commit support`,
+	Long: `Tracer Bullet helps developers manage their workflow through a natural progression:
+
+1. Setup: Initialize and configure your environment
+   tracer init           # Initialize a new project
+   tracer configure     # Set up your environment
+
+2. Work: Create and track stories, manage commits
+   tracer story        # Manage development stories
+   tracer commit       # Create and manage commits
+
+3. Collaborate: Handle pair programming sessions
+   tracer pair         # Manage pair programming
+
+4. Integrate: Connect with external tools
+   tracer jira         # Jira integration
+
+Each command follows a natural workflow, making it easy to:
+- Start new projects
+- Track your work
+- Collaborate with others
+- Manage your development process`,
 }
 
 func init() {
 	// Add all commands to root
 	RootCmd.AddCommand(InitCmd)
 	RootCmd.AddCommand(ConfigureCmd)
-	RootCmd.AddCommand(PairCmd)
 	RootCmd.AddCommand(StoryCmd)
-	RootCmd.AddCommand(JiraCmd)
 	RootCmd.AddCommand(CommitCmd)
+	RootCmd.AddCommand(PairCmd)
+	RootCmd.AddCommand(JiraCmd)
 }
 
 // Execute runs the root command
