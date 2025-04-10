@@ -31,8 +31,8 @@ func NewRealGit() GitOperations {
 	return &RealGit{}
 }
 
-// MockGit implements GitOperations for testing
-type MockGit struct {
+// BaseMockGit provides default implementations for all GitOperations methods
+type BaseMockGit struct {
 	InitFunc            func() error
 	SetConfigFunc       func(key, value string) error
 	GetConfigFunc       func(key string) (string, error)
@@ -47,9 +47,9 @@ type MockGit struct {
 	BranchExistsFunc    func(branchName string) (bool, error)
 }
 
-// NewMockGit creates a new MockGit instance
-func NewMockGit() GitOperations {
-	return &MockGit{
+// NewBaseMockGit creates a new BaseMockGit with default implementations
+func NewBaseMockGit() *BaseMockGit {
+	return &BaseMockGit{
 		InitFunc: func() error {
 			return nil
 		},
@@ -86,6 +86,18 @@ func NewMockGit() GitOperations {
 		BranchExistsFunc: func(branchName string) (bool, error) {
 			return false, nil
 		},
+	}
+}
+
+// MockGit implements GitOperations for testing
+type MockGit struct {
+	*BaseMockGit
+}
+
+// NewMockGit creates a new MockGit instance
+func NewMockGit() GitOperations {
+	return &MockGit{
+		BaseMockGit: NewBaseMockGit(),
 	}
 }
 
@@ -214,98 +226,62 @@ func (g *RealGit) BranchExists(branchName string) (bool, error) {
 
 // Init initializes a git repository (mock implementation)
 func (g *MockGit) Init() error {
-	if g.InitFunc != nil {
-		return g.InitFunc()
-	}
-	return nil
+	return g.InitFunc()
 }
 
 // SetConfig sets a git configuration value (mock implementation)
 func (g *MockGit) SetConfig(key, value string) error {
-	if g.SetConfigFunc != nil {
-		return g.SetConfigFunc(key, value)
-	}
-	return nil
+	return g.SetConfigFunc(key, value)
 }
 
 // GetConfig gets a git configuration value (mock implementation)
 func (g *MockGit) GetConfig(key string) (string, error) {
-	if g.GetConfigFunc != nil {
-		return g.GetConfigFunc(key)
-	}
-	return "", nil
+	return g.GetConfigFunc(key)
 }
 
 // ParseRevision parses a git revision (mock implementation)
 func (g *MockGit) ParseRevision(rev string) (string, error) {
-	if g.ParseRevisionFunc != nil {
-		return g.ParseRevisionFunc(rev)
-	}
-	return "", nil
+	return g.ParseRevisionFunc(rev)
 }
 
 // Commit creates a git commit (mock implementation)
 func (g *MockGit) Commit(message string) error {
-	if g.CommitFunc != nil {
-		return g.CommitFunc(message)
-	}
-	return nil
+	return g.CommitFunc(message)
 }
 
 // GetCurrentHead gets the current git head (mock implementation)
 func (g *MockGit) GetCurrentHead() (string, error) {
-	if g.GetCurrentHeadFunc != nil {
-		return g.GetCurrentHeadFunc()
-	}
-	return "", nil
+	return g.GetCurrentHeadFunc()
 }
 
 // GetAuthor gets the git author (mock implementation)
 func (g *MockGit) GetAuthor() (string, error) {
-	if g.GetAuthorFunc != nil {
-		return g.GetAuthorFunc()
-	}
-	return "", nil
+	return g.GetAuthorFunc()
 }
 
 // GetChangedFiles gets the list of changed files (mock implementation)
 func (g *MockGit) GetChangedFiles() ([]string, error) {
-	if g.GetChangedFilesFunc != nil {
-		return g.GetChangedFilesFunc()
-	}
-	return nil, nil
+	return g.GetChangedFilesFunc()
 }
 
 // GetGitRoot gets the root directory of the git repository (mock implementation)
 func (g *MockGit) GetGitRoot() (string, error) {
-	if g.GetGitRootFunc != nil {
-		return g.GetGitRootFunc()
-	}
-	return "", nil
+	return g.GetGitRootFunc()
 }
 
 // CreateBranch creates a new git branch (mock implementation)
 func (g *MockGit) CreateBranch(branchName string) error {
-	if g.CreateBranchFunc != nil {
-		return g.CreateBranchFunc(branchName)
-	}
-	return nil
+	return g.CreateBranchFunc(branchName)
 }
 
 // SwitchBranch switches to an existing git branch (mock implementation)
 func (g *MockGit) SwitchBranch(branchName string) error {
-	if g.SwitchBranchFunc != nil {
-		return g.SwitchBranchFunc(branchName)
-	}
-	return nil
+	return g.SwitchBranchFunc(branchName)
 }
 
 // BranchExists checks if a branch exists (mock implementation)
 func (g *MockGit) BranchExists(branchName string) (bool, error) {
-	if g.BranchExistsFunc != nil {
-		return g.BranchExistsFunc(branchName)
-	}
-	return false, nil
+	return g.BranchExistsFunc(branchName)
 }
 
 // splitLines splits a string into lines and trims whitespace
