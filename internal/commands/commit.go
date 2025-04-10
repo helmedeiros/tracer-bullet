@@ -21,12 +21,82 @@ Supports common types like feat, fix, docs, style, refactor, test, and chore.
 Automatically includes scope based on current story if available.`,
 }
 
+// buildCommitMessage builds the commit message from the provided parameters
+func buildCommitMessage(commitType, scope, message, body string, breaking bool) string {
+	var commitMsg strings.Builder
+
+	// First line: type(scope): message
+	commitMsg.WriteString(commitType)
+	if scope != "" {
+		commitMsg.WriteString(fmt.Sprintf("(%s)", scope))
+	}
+	if breaking {
+		commitMsg.WriteString("!")
+	}
+	commitMsg.WriteString(fmt.Sprintf(": %s", message))
+
+	// Add body if provided
+	if body != "" {
+		commitMsg.WriteString("\n\n")
+		commitMsg.WriteString(body)
+	}
+
+	return commitMsg.String()
+}
+
+// addJiraUrl adds the Jira story URL to the commit message if requested
+func addJiraUrl(commitMsg string) (string, error) {
+	cfg, err := config.LoadConfig()
+	if err != nil || cfg.JiraHost == "" || cfg.JiraProject == "" {
+		return commitMsg, nil
+	}
+
+	// Get current story from git config
+	storyID, err := utils.GitClient.GetConfig(fmt.Sprintf("%s.current.story", cfg.JiraProject))
+	if err != nil || storyID == "" {
+		return commitMsg, nil
+	}
+
+	// Add Jira URL to commit message
+	jiraUrl := fmt.Sprintf("\n\nJira: https://%s/browse/%s-%s", cfg.JiraHost, cfg.JiraProject, storyID)
+	return commitMsg + jiraUrl, nil
+}
+
+// addBreakingChange adds the breaking change footer if needed
+func addBreakingChange(commitMsg, message, body string, breaking bool) string {
+	if !breaking {
+		return commitMsg
+	}
+
+	commitMsg += "\n\nBREAKING CHANGE: "
+	if !strings.Contains(strings.ToLower(body), "breaking change") {
+		commitMsg += message
+	}
+	return commitMsg
+}
+
+// validateCommitType checks if the commit type is valid
+func validateCommitType(commitType string) error {
+	validTypes := map[string]bool{
+		"feat":     true,
+		"fix":      true,
+		"docs":     true,
+		"style":    true,
+		"refactor": true,
+		"test":     true,
+		"chore":    true,
+	}
+
+	if !validTypes[commitType] {
+		return fmt.Errorf("invalid commit type: %s. Must be one of: feat, fix, docs, style, refactor, test, chore", commitType)
+	}
+	return nil
+}
+
 var commitCreateCmd = &cobra.Command{
 	Use:   "create",
 	Short: "Create a new commit",
-	Long: `Create a new git commit with proper conventional commit format.
-Example: tracer commit create --type feat --scope auth --message "add login functionality"
-Will create: feat(auth): add login functionality`,
+	Long:  `Create a new commit with a conventional commit message.`,
 	RunE: func(cmd *cobra.Command, args []string) error {
 		// Get flag values
 		commitType, _ := cmd.Flags().GetString("type")
@@ -37,8 +107,8 @@ Will create: feat(auth): add login functionality`,
 		includeJira, _ := cmd.Flags().GetBool("jira")
 
 		// Validate commit type
-		if !isValidCommitType(commitType) {
-			return fmt.Errorf("invalid commit type: %s. Must be one of: feat, fix, docs, style, refactor, test, chore", commitType)
+		if err := validateCommitType(commitType); err != nil {
+			return err
 		}
 
 		// Validate message
@@ -47,48 +117,19 @@ Will create: feat(auth): add login functionality`,
 		}
 
 		// Build commit message
-		var commitMsg strings.Builder
-
-		// First line: type(scope): message
-		commitMsg.WriteString(commitType)
-		if scope != "" {
-			commitMsg.WriteString(fmt.Sprintf("(%s)", scope))
-		}
-		if breaking {
-			commitMsg.WriteString("!")
-		}
-		commitMsg.WriteString(fmt.Sprintf(": %s", message))
-
-		// Add body if provided
-		if body != "" {
-			commitMsg.WriteString("\n\n")
-			commitMsg.WriteString(body)
-		}
+		commitMsg := buildCommitMessage(commitType, scope, message, body, breaking)
 
 		// Add Jira story URL if requested
 		if includeJira {
-			cfg, err := config.LoadConfig()
-			if err == nil && cfg.JiraHost != "" && cfg.JiraProject != "" {
-				// Get current story from git config
-				storyID, err := utils.GitClient.GetConfig(fmt.Sprintf("%s.current.story", cfg.JiraProject))
-				if err == nil && storyID != "" {
-					commitMsg.WriteString("\n\nJira: https://")
-					commitMsg.WriteString(cfg.JiraHost)
-					commitMsg.WriteString("/browse/")
-					commitMsg.WriteString(cfg.JiraProject)
-					commitMsg.WriteString("-")
-					commitMsg.WriteString(storyID)
-				}
+			var err error
+			commitMsg, err = addJiraUrl(commitMsg)
+			if err != nil {
+				return err
 			}
 		}
 
 		// Add breaking change footer if needed
-		if breaking {
-			commitMsg.WriteString("\n\nBREAKING CHANGE: ")
-			if !strings.Contains(strings.ToLower(body), "breaking change") {
-				commitMsg.WriteString(message)
-			}
-		}
+		commitMsg = addBreakingChange(commitMsg, message, body, breaking)
 
 		// Create temporary file for commit message
 		configDir, err := utils.GetConfigDir()
@@ -97,13 +138,13 @@ Will create: feat(auth): add login functionality`,
 		}
 
 		tmpFile := filepath.Join(configDir, "COMMIT_MSG")
-		if err := os.WriteFile(tmpFile, []byte(commitMsg.String()), 0600); err != nil {
+		if err := os.WriteFile(tmpFile, []byte(commitMsg), 0600); err != nil {
 			return fmt.Errorf("failed to write commit message: %w", err)
 		}
 		defer os.Remove(tmpFile)
 
 		// Run git commit
-		err = utils.GitClient.Commit(commitMsg.String())
+		err = utils.GitClient.Commit(commitMsg)
 		if err != nil {
 			return fmt.Errorf("failed to create commit: %w", err)
 		}
@@ -129,7 +170,7 @@ Will create: feat(auth): add login functionality`,
 				s, err := story.LoadStory(storyID)
 				if err == nil {
 					// Add the commit to the story
-					s.AddCommit(commitHash, commitMsg.String(), author, time.Now())
+					s.AddCommit(commitHash, commitMsg, author, time.Now())
 
 					// Get changed files
 					files, err := utils.GitClient.GetChangedFiles()
@@ -147,7 +188,7 @@ Will create: feat(auth): add login functionality`,
 			}
 		}
 
-		fmt.Fprintf(cmd.OutOrStdout(), "Created commit: %s\n", commitMsg.String())
+		fmt.Fprintf(cmd.OutOrStdout(), "Created commit: %s\n", commitMsg)
 		return nil
 	},
 }
@@ -170,17 +211,4 @@ func init() {
 			panic(fmt.Sprintf("failed to mark %s flag as required: %v", flag, err))
 		}
 	}
-}
-
-func isValidCommitType(commitType string) bool {
-	validTypes := map[string]bool{
-		"feat":     true,
-		"fix":      true,
-		"docs":     true,
-		"style":    true,
-		"refactor": true,
-		"test":     true,
-		"chore":    true,
-	}
-	return validTypes[commitType]
 }
