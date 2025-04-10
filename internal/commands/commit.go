@@ -15,10 +15,26 @@ import (
 
 var CommitCmd = &cobra.Command{
 	Use:   "commit",
-	Short: "Create a conventional commit",
-	Long: `Create a git commit following conventional commit format.
-Supports common types like feat, fix, docs, style, refactor, test, and chore.
-Automatically includes scope based on current story if available.`,
+	Short: "Create and manage commits",
+	Long: `Manage your commits through a natural workflow:
+
+1. Create Commits
+   tracer commit create --type feat --message "Add new feature"
+   tracer commit create --type fix --message "Fix bug" --scope core
+
+2. View History
+   tracer commit show --id <commit-hash>
+   tracer commit list --story <story-id>
+
+3. Search and Filter
+   tracer commit by --author <author>
+   tracer commit since --date <date>
+
+Each command follows a natural progression, helping you:
+- Create well-structured commits
+- Track changes effectively
+- Maintain clear history
+- Link commits to stories`,
 }
 
 // buildCommitMessage builds the commit message from the provided parameters
@@ -96,7 +112,29 @@ func validateCommitType(commitType string) error {
 var commitCreateCmd = &cobra.Command{
 	Use:   "create",
 	Short: "Create a new commit",
-	Long:  `Create a new commit with a conventional commit message.`,
+	Long: `Create a new commit with a conventional commit message.
+
+Examples:
+  tracer commit create --type feat --message "Add user authentication"
+  tracer commit create --type fix --scope api --message "Fix timeout issue"
+  tracer commit create --type feat --message "Breaking change" --breaking
+
+Commit Types:
+  feat     - A new feature
+  fix      - A bug fix
+  docs     - Documentation only changes
+  style    - Changes that don't affect the code's meaning
+  refactor - Code changes that neither fix a bug nor add a feature
+  test     - Adding missing tests or correcting existing tests
+  chore    - Changes to the build process or auxiliary tools
+
+Flags:
+  --type     Required. The type of change (feat, fix, etc.)
+  --message  Required. The commit message
+  --scope    Optional. The scope of the change (e.g., api, core)
+  --body     Optional. Detailed description of the change
+  --breaking Optional. Mark as a breaking change
+  --jira    Optional. Include Jira story URL in commit body`,
 	RunE: func(cmd *cobra.Command, args []string) error {
 		// Get flag values
 		commitType, _ := cmd.Flags().GetString("type")
@@ -106,14 +144,34 @@ var commitCreateCmd = &cobra.Command{
 		breaking, _ := cmd.Flags().GetBool("breaking")
 		includeJira, _ := cmd.Flags().GetBool("jira")
 
-		// Validate commit type
+		// Validate commit type with better error message
 		if err := validateCommitType(commitType); err != nil {
-			return err
+			return fmt.Errorf(`%w
+
+Valid commit types:
+  feat     - A new feature
+  fix      - A bug fix
+  docs     - Documentation only changes
+  style    - Changes that don't affect code meaning
+  refactor - Code changes (no fixes/features)
+  test     - Changes to tests
+  chore    - Changes to build process/tools
+
+Example:
+  tracer commit create --type feat --message "Add user auth"`, err)
 		}
 
-		// Validate message
+		// Validate message with better guidance
 		if message == "" {
-			return fmt.Errorf("commit message cannot be empty")
+			return fmt.Errorf(`commit message cannot be empty
+
+Example messages:
+  "Add user authentication flow"
+  "Fix timeout in API requests"
+  "Update documentation for setup"
+
+Usage:
+  tracer commit create --type <type> --message "Your message"`)
 		}
 
 		// Build commit message
@@ -124,7 +182,7 @@ var commitCreateCmd = &cobra.Command{
 			var err error
 			commitMsg, err = addJiraUrl(commitMsg)
 			if err != nil {
-				return err
+				return fmt.Errorf("failed to add Jira URL: %w", err)
 			}
 		}
 
@@ -146,7 +204,17 @@ var commitCreateCmd = &cobra.Command{
 		// Run git commit
 		err = utils.GitClient.Commit(commitMsg)
 		if err != nil {
-			return fmt.Errorf("failed to create commit: %w", err)
+			return fmt.Errorf(`failed to create commit: %w
+
+Common issues:
+1. No staged changes (use 'git add' first)
+2. No changes to commit
+3. Merge conflicts need resolution
+
+Try these steps:
+1. Stage your changes:   git add <files>
+2. Check status:         git status
+3. Try commit again:     tracer commit create ...`, err)
 		}
 
 		// Get the commit hash
@@ -188,7 +256,23 @@ var commitCreateCmd = &cobra.Command{
 			}
 		}
 
-		fmt.Fprintf(cmd.OutOrStdout(), "Created commit: %s\n", commitMsg)
+		// Display success message with next steps
+		fmt.Fprintf(cmd.OutOrStdout(), "\nCommit created successfully!\n\n")
+		fmt.Fprintf(cmd.OutOrStdout(), "Details:\n")
+		fmt.Fprintf(cmd.OutOrStdout(), "  Type: %s\n", commitType)
+		if scope != "" {
+			fmt.Fprintf(cmd.OutOrStdout(), "  Scope: %s\n", scope)
+		}
+		fmt.Fprintf(cmd.OutOrStdout(), "  Message: %s\n", message)
+		fmt.Fprintf(cmd.OutOrStdout(), "  Hash: %s\n", commitHash)
+		fmt.Fprintf(cmd.OutOrStdout(), "  Author: %s\n", author)
+
+		fmt.Fprintf(cmd.OutOrStdout(), "\nNext steps:\n")
+		fmt.Fprintf(cmd.OutOrStdout(), "1. Push changes:        git push\n")
+		fmt.Fprintf(cmd.OutOrStdout(), "2. View commit:         git show %s\n", commitHash)
+		fmt.Fprintf(cmd.OutOrStdout(), "3. Create more commits: tracer commit create ...\n")
+		fmt.Fprintf(cmd.OutOrStdout(), "4. View story:          tracer story show\n")
+
 		return nil
 	},
 }
@@ -196,18 +280,18 @@ var commitCreateCmd = &cobra.Command{
 func init() {
 	CommitCmd.AddCommand(commitCreateCmd)
 
-	commitCreateCmd.Flags().String("type", "", "Commit type (feat, fix, docs, style, refactor, test, chore)")
-	commitCreateCmd.Flags().String("message", "", "Commit message")
-	commitCreateCmd.Flags().String("scope", "", "Commit scope (optional)")
-	commitCreateCmd.Flags().String("body", "", "Commit body (optional)")
-	commitCreateCmd.Flags().Bool("breaking", false, "Mark as breaking change")
+	// Add flags with better descriptions
+	commitCreateCmd.Flags().String("type", "", "Type of change (feat, fix, docs, style, refactor, test, chore)")
+	commitCreateCmd.Flags().String("message", "", "Short, descriptive commit message")
+	commitCreateCmd.Flags().String("scope", "", "Scope of the change (e.g., api, core)")
+	commitCreateCmd.Flags().String("body", "", "Detailed description of the change")
+	commitCreateCmd.Flags().Bool("breaking", false, "Mark as a breaking change")
 	commitCreateCmd.Flags().Bool("jira", false, "Include Jira story URL in commit body")
 
-	// Handle required flags
+	// Mark required flags
 	requiredFlags := []string{"type", "message"}
 	for _, flag := range requiredFlags {
 		if err := commitCreateCmd.MarkFlagRequired(flag); err != nil {
-			// Since this is during initialization, panic is appropriate
 			panic(fmt.Sprintf("failed to mark %s flag as required: %v", flag, err))
 		}
 	}
