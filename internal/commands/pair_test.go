@@ -52,31 +52,31 @@ func TestPairCommand(t *testing.T) {
 			name:       "start with valid partner",
 			args:       []string{"start", "jane.doe"},
 			wantErr:    false,
-			wantOutput: "Started pair programming session with jane.doe\n",
+			wantOutput: "\nStarted pair programming session!\n\nSession Details:\n  Project: test-project\n  Current User: john.doe\n  Pair Partner: jane.doe\n\nNext steps:\n1. Create a new story with 'tracer story new'\n2. Make changes together\n3. Create commits with 'tracer commit create'\n4. End session with 'tracer pair stop' when done\n",
 		},
 		{
 			name:       "start with empty partner",
 			args:       []string{"start"},
 			wantErr:    true,
-			errMessage: "partner name is required",
+			errMessage: "partner name is required. Please provide it as follows:\ntracer pair start <partner-name>\n\nExample:\n  tracer pair start john.doe",
 		},
 		{
 			name:       "stop pair",
 			args:       []string{"stop"},
 			wantErr:    false,
-			wantOutput: "Stopped pair programming session\n",
+			wantOutput: "\nEnded pair programming session!\n\n",
 		},
 		{
 			name:       "show status",
 			args:       []string{"show"},
 			wantErr:    false,
-			wantOutput: "\nPair Programming Session:\n  Project: test-project\n  Current User: john.doe\n  Pair Partner: \n\n",
+			wantOutput: "\nNo active pair programming session\n\nTo start a session:\n  tracer pair start <partner-name>\n",
 		},
 		{
 			name:       "invalid command",
 			args:       []string{"invalid"},
 			wantErr:    true,
-			errMessage: "unknown command: invalid",
+			errMessage: "unknown command: invalid\n\nAvailable Commands:\n  start <partner-name>  Start a pair programming session\n  show                  Show current session status\n  stop                  End the current session\n\nExample:\n  tracer pair start john.doe",
 		},
 	}
 
