@@ -176,7 +176,7 @@ func CreateBranch(branchName string) error {
 }
 
 // GenerateBranchName generates a kebab-case branch name from a story title or ID
-func GenerateBranchName(title string, id string) string {
+func GenerateBranchName(title string, id string, number int, project string) string {
 	// Use title if available, otherwise use ID
 	name := title
 	if name == "" {
@@ -206,6 +206,16 @@ func GenerateBranchName(title string, id string) string {
 
 	// Remove leading and trailing dashes
 	name = strings.Trim(name, "-")
+
+	// If number is provided, prepend it to the name
+	if number > 0 {
+		name = fmt.Sprintf("%d-%s", number, name)
+	}
+
+	// If project is provided, prepend it to the name
+	if project != "" {
+		name = fmt.Sprintf("%s-%s", project, name)
+	}
 
 	// Prepend features/ to the branch name
 	return "features/" + name

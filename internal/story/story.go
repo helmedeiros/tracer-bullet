@@ -59,8 +59,11 @@ func NewStory(title, description, author string) (*Story, error) {
 		Number:      0,
 	}
 
+	// Get project name from git config
+	projectName, _ := utils.GitClient.GetConfig("current.project")
+
 	// Try to create a git branch for the story
-	branchName := utils.GenerateBranchName(title, story.ID)
+	branchName := utils.GenerateBranchName(title, story.ID, story.Number, projectName)
 	if err := utils.CreateBranch(branchName); err != nil {
 		// If we can't create a branch, it's not a critical error
 		// The story will still be created, but we'll log the error
@@ -93,8 +96,11 @@ func NewStoryWithNumber(title, description, author string, number int) (*Story, 
 		Number:      number,
 	}
 
+	// Get project name from git config
+	projectName, _ := utils.GitClient.GetConfig("current.project")
+
 	// Try to create a git branch for the story
-	branchName := utils.GenerateBranchName(title, story.ID)
+	branchName := utils.GenerateBranchName(title, story.ID, story.Number, projectName)
 	if err := utils.CreateBranch(branchName); err != nil {
 		// If we can't create a branch, it's not a critical error
 		// The story will still be created, but we'll log the error
