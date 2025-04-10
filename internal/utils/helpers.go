@@ -175,6 +175,40 @@ func CreateBranch(branchName string) error {
 	return GitClient.CreateBranch(branchName)
 }
 
+// ToKebabCase converts a string to kebab-case format
+func ToKebabCase(s string) string {
+	// Convert to lowercase
+	s = strings.ToLower(s)
+
+	// Replace special characters with dashes
+	replacements := []string{
+		" ", "-",
+		"_", "-",
+		".", "-",
+		"/", "-",
+		"\\", "-",
+		":", "-",
+		"*", "-",
+		"?", "-",
+		"\"", "-",
+		"<", "-",
+		">", "-",
+		"|", "-",
+		"#", "-",
+	}
+
+	replacer := strings.NewReplacer(replacements...)
+	s = replacer.Replace(s)
+
+	// Remove any consecutive dashes
+	for strings.Contains(s, "--") {
+		s = strings.ReplaceAll(s, "--", "-")
+	}
+
+	// Remove leading and trailing dashes
+	return strings.Trim(s, "-")
+}
+
 // GenerateBranchName generates a kebab-case branch name from a story title or ID
 func GenerateBranchName(title string, id string, number int, project string) string {
 	// Use title if available, otherwise use ID
@@ -184,28 +218,7 @@ func GenerateBranchName(title string, id string, number int, project string) str
 	}
 
 	// Convert to kebab case
-	name = strings.ToLower(name)
-	name = strings.ReplaceAll(name, " ", "-")
-	name = strings.ReplaceAll(name, "_", "-")
-	name = strings.ReplaceAll(name, ".", "-")
-	name = strings.ReplaceAll(name, "/", "-")
-	name = strings.ReplaceAll(name, "\\", "-")
-	name = strings.ReplaceAll(name, ":", "-")
-	name = strings.ReplaceAll(name, "*", "-")
-	name = strings.ReplaceAll(name, "?", "-")
-	name = strings.ReplaceAll(name, "\"", "-")
-	name = strings.ReplaceAll(name, "<", "-")
-	name = strings.ReplaceAll(name, ">", "-")
-	name = strings.ReplaceAll(name, "|", "-")
-	name = strings.ReplaceAll(name, "#", "-")
-
-	// Remove any consecutive dashes
-	for strings.Contains(name, "--") {
-		name = strings.ReplaceAll(name, "--", "-")
-	}
-
-	// Remove leading and trailing dashes
-	name = strings.Trim(name, "-")
+	name = ToKebabCase(name)
 
 	// If number is provided, prepend it to the name
 	if number > 0 {
@@ -219,4 +232,9 @@ func GenerateBranchName(title string, id string, number int, project string) str
 
 	// Prepend features/ to the branch name
 	return "features/" + name
+}
+
+// GetProjectName returns the current project name from git config
+func GetProjectName() (string, error) {
+	return GitClient.GetConfig("current.project")
 }
