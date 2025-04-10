@@ -20,9 +20,7 @@ const (
 
 // MockGitClient is a mock implementation of the GitClient interface
 type MockGitClient struct {
-	GetGitRootFunc func() (string, error)
-	SetConfigFunc  func(key, value string) error
-	GetConfigFunc  func(key string) (string, error)
+	*utils.BaseMockGit
 }
 
 func (m *MockGitClient) GetGitRoot() (string, error) {
@@ -85,23 +83,22 @@ func setupTestEnvironment(t *testing.T) (string, *utils.MockGit, string) {
 	utils.TestConfigDir = configDir
 
 	// Create and return mock git client
-	mockGitClient := &utils.MockGit{
-		GetGitRootFunc: func() (string, error) {
-			return repoDir, nil
-		},
-		SetConfigFunc: func(key, value string) error {
-			return nil
-		},
-		GetConfigFunc: func(key string) (string, error) {
-			switch key {
-			case CurrentProject:
-				return TestProjectName, nil
-			case ProjectUser:
-				return TestUserName, nil
-			default:
-				return "", nil
-			}
-		},
+	mockGitClient := utils.NewMockGit().(*utils.MockGit)
+	mockGitClient.GetGitRootFunc = func() (string, error) {
+		return repoDir, nil
+	}
+	mockGitClient.SetConfigFunc = func(key, value string) error {
+		return nil
+	}
+	mockGitClient.GetConfigFunc = func(key string) (string, error) {
+		switch key {
+		case CurrentProject:
+			return TestProjectName, nil
+		case ProjectUser:
+			return TestUserName, nil
+		default:
+			return "", nil
+		}
 	}
 
 	// Set the mock git client as the global git client
