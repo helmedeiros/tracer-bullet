@@ -72,7 +72,7 @@ func TestNewStory(t *testing.T) {
 			author:      "john.doe",
 			number:      123,
 			expectError: false,
-			branchName:  "test-story",
+			branchName:  "features/test-story",
 		},
 		{
 			name:        "valid story with all fields",
@@ -81,7 +81,7 @@ func TestNewStory(t *testing.T) {
 			author:      "john.doe",
 			number:      124,
 			expectError: false,
-			branchName:  "test-story",
+			branchName:  "features/test-story",
 		},
 		{
 			name:        "missing number",
@@ -108,7 +108,7 @@ func TestNewStory(t *testing.T) {
 			author:      "john.doe",
 			number:      126,
 			expectError: false,
-			branchName:  "test-story-fix-bug-123",
+			branchName:  "features/test-story-fix-bug-123",
 		},
 	}
 
@@ -172,7 +172,7 @@ func TestNewStory_BranchExists(t *testing.T) {
 		return true, nil
 	}
 	mockGit.(*utils.MockGit).SwitchBranchFunc = func(branchName string) error {
-		assert.Equal(t, "test-story", branchName)
+		assert.Equal(t, "features/test-story", branchName)
 		return nil
 	}
 

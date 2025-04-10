@@ -716,37 +716,37 @@ func TestGenerateBranchName(t *testing.T) {
 			name:     "simple title",
 			title:    "Test Story",
 			id:       "story-123",
-			expected: "test-story",
+			expected: "features/test-story",
 		},
 		{
 			name:     "title with special characters",
 			title:    "Test Story: Fix Bug #123",
 			id:       "story-123",
-			expected: "test-story-fix-bug-123",
+			expected: "features/test-story-fix-bug-123",
 		},
 		{
 			name:     "title with multiple spaces",
 			title:    "Test  Story  With  Spaces",
 			id:       "story-123",
-			expected: "test-story-with-spaces",
+			expected: "features/test-story-with-spaces",
 		},
 		{
 			name:     "empty title uses ID",
 			title:    "",
 			id:       "story-123",
-			expected: "story-123",
+			expected: "features/story-123",
 		},
 		{
 			name:     "title with underscores",
 			title:    "test_story_with_underscores",
 			id:       "story-123",
-			expected: "test-story-with-underscores",
+			expected: "features/test-story-with-underscores",
 		},
 		{
 			name:     "title with dots",
 			title:    "test.story.with.dots",
 			id:       "story-123",
-			expected: "test-story-with-dots",
+			expected: "features/test-story-with-dots",
 		},
 	}
 
