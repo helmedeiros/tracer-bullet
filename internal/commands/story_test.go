@@ -55,7 +55,7 @@ func TestStoryCommand(t *testing.T) {
 				"number": "123",
 			},
 			expectError: true,
-			errorMsg:    "title is required when creating a story with a number",
+			errorMsg:    "failed to create story: title is required when creating a story with a number",
 		},
 		{
 			name: "create story with number and title",
@@ -100,7 +100,7 @@ func TestStoryCommand(t *testing.T) {
 				"title":  "Test Story",
 			},
 			expectError: true,
-			errorMsg:    "number must be greater than 0",
+			errorMsg:    "story number must be greater than 0",
 		},
 		{
 			name: "create story without project configuration",
@@ -109,7 +109,7 @@ func TestStoryCommand(t *testing.T) {
 				"title":  "Test Story",
 			},
 			expectError: true,
-			errorMsg:    "project not configured. Please run 'tracer configure project' first",
+			errorMsg:    "project not configured. Please follow these steps:\n1. Run 'tracer init' to initialize your project\n2. Run 'tracer configure project' to set up project settings",
 		},
 		{
 			name: "create story without user configuration",
@@ -118,7 +118,7 @@ func TestStoryCommand(t *testing.T) {
 				"title":  "Test Story",
 			},
 			expectError: true,
-			errorMsg:    "user not configured. Please run 'tracer configure user' first",
+			errorMsg:    "user not configured. Please follow these steps:\n1. Run 'tracer configure user' to set up your user information\n2. Verify your git configuration is correct",
 		},
 	}
 

@@ -12,13 +12,42 @@ import (
 var StoryCmd = &cobra.Command{
 	Use:   "story",
 	Short: "Manage stories and their tracking",
-	Long:  `Create and manage stories, track their progress, and view associated commits and changes.`,
+	Long: `Manage your development stories through a natural workflow:
+
+1. Create Stories
+   tracer story new --title "Feature X" --description "Implement feature X"
+
+2. Track Progress
+   tracer story status --id <story-id>
+   tracer story files --id <story-id>
+   tracer story commits --id <story-id>
+
+3. View History
+   tracer story diary --id <story-id>
+   tracer story diff --id <story-id>
+
+4. Search and Filter
+   tracer story by --author <author>
+   tracer story after-hash --hash <commit-hash>
+
+Each command builds on the previous ones, helping you maintain a clear development diary.`,
 }
 
 var storyNewCmd = &cobra.Command{
 	Use:   "new",
 	Short: "Create a new story",
-	Long:  `Create a new story with title, description, and other metadata.`,
+	Long: `Create a new story with title, description, and other metadata.
+
+Example:
+  tracer story new --title "Add user authentication" --description "Implement OAuth2" --number 123 --tags "auth,security"
+
+Required Flags:
+  --number    Story number (must be > 0)
+
+Optional Flags:
+  --title       Story title
+  --description Story description
+  --tags        Comma-separated list of tags`,
 	RunE: func(cmd *cobra.Command, args []string) error {
 		// Get current user from config
 		cfg, err := config.LoadConfig()
@@ -26,12 +55,16 @@ var storyNewCmd = &cobra.Command{
 			return fmt.Errorf("failed to load config: %w", err)
 		}
 
-		// Validate project and user configuration
+		// Validate project and user configuration with better guidance
 		if cfg.GitRepo == "" {
-			return fmt.Errorf("project not configured. Please run 'tracer configure project' first")
+			return fmt.Errorf(`project not configured. Please follow these steps:
+1. Run 'tracer init' to initialize your project
+2. Run 'tracer configure project' to set up project settings`)
 		}
 		if cfg.AuthorName == "" {
-			return fmt.Errorf("user not configured. Please run 'tracer configure user' first")
+			return fmt.Errorf(`user not configured. Please follow these steps:
+1. Run 'tracer configure user' to set up your user information
+2. Verify your git configuration is correct`)
 		}
 
 		// Get flag values
@@ -40,17 +73,17 @@ var storyNewCmd = &cobra.Command{
 		tags, _ := cmd.Flags().GetStringSlice("tags")
 		number, _ := cmd.Flags().GetInt("number")
 
-		// Create new story
+		// Create new story with better validation
 		var s *story.Story
 		if !cmd.Flags().Changed("number") {
-			return fmt.Errorf("number must be provided")
+			return fmt.Errorf("story number is required. Use --number flag to specify a unique story number")
 		}
 		if number <= 0 {
-			return fmt.Errorf("number must be greater than 0")
+			return fmt.Errorf("story number must be greater than 0")
 		}
 		s, err = story.NewStoryWithNumber(title, description, cfg.AuthorName, number)
 		if err != nil {
-			return err
+			return fmt.Errorf("failed to create story: %w", err)
 		}
 
 		// Set tags if provided
@@ -60,23 +93,29 @@ var storyNewCmd = &cobra.Command{
 
 		// Save story
 		if err := s.Save(); err != nil {
-			return err
+			return fmt.Errorf("failed to save story: %w", err)
 		}
 
-		// Write output to stdout
-		fmt.Fprintf(cmd.OutOrStdout(), "Created new story: %s\n", s.ID)
-		fmt.Fprintf(cmd.OutOrStdout(), "Number: %d\n", s.Number)
+		// Write output to stdout with better formatting
+		fmt.Fprintf(cmd.OutOrStdout(), "\nCreated new story successfully!\n\n")
+		fmt.Fprintf(cmd.OutOrStdout(), "Story Details:\n")
+		fmt.Fprintf(cmd.OutOrStdout(), "  ID: %s\n", s.ID)
+		fmt.Fprintf(cmd.OutOrStdout(), "  Number: %d\n", s.Number)
 		if s.Title != "" {
-			fmt.Fprintf(cmd.OutOrStdout(), "Title: %s\n", s.Title)
+			fmt.Fprintf(cmd.OutOrStdout(), "  Title: %s\n", s.Title)
 		}
 		if s.Description != "" {
-			fmt.Fprintf(cmd.OutOrStdout(), "Description: %s\n", s.Description)
+			fmt.Fprintf(cmd.OutOrStdout(), "  Description: %s\n", s.Description)
 		}
 		if len(s.Tags) > 0 {
-			fmt.Fprintf(cmd.OutOrStdout(), "Tags: %v\n", s.Tags)
+			fmt.Fprintf(cmd.OutOrStdout(), "  Tags: %v\n", s.Tags)
 		}
-		fmt.Fprintf(cmd.OutOrStdout(), "Author: %s\n", s.Author)
-		fmt.Fprintf(cmd.OutOrStdout(), "Status: %s\n", s.Status)
+		fmt.Fprintf(cmd.OutOrStdout(), "  Author: %s\n", s.Author)
+		fmt.Fprintf(cmd.OutOrStdout(), "  Status: %s\n", s.Status)
+		fmt.Fprintf(cmd.OutOrStdout(), "\nNext steps:\n")
+		fmt.Fprintf(cmd.OutOrStdout(), "1. Add files to your story with 'git add'\n")
+		fmt.Fprintf(cmd.OutOrStdout(), "2. Create commits with 'tracer commit create'\n")
+		fmt.Fprintf(cmd.OutOrStdout(), "3. Track progress with 'tracer story status'\n")
 
 		return nil
 	},
@@ -405,41 +444,41 @@ var storyDiffCmd = &cobra.Command{
 }
 
 func init() {
-	// Add flags to new command
-	storyNewCmd.Flags().StringP("title", "t", "", "Story title")
-	storyNewCmd.Flags().StringP("description", "d", "", "Story description")
-	storyNewCmd.Flags().StringSliceP("tags", "g", []string{}, "Story tags")
-	storyNewCmd.Flags().IntP("number", "n", 0, "Story number")
+	// Add flags to new command with better descriptions
+	storyNewCmd.Flags().StringP("title", "t", "", "Story title (e.g., 'Add user authentication')")
+	storyNewCmd.Flags().StringP("description", "d", "", "Story description (e.g., 'Implement OAuth2 authentication flow')")
+	storyNewCmd.Flags().StringSliceP("tags", "g", []string{}, "Story tags (comma-separated, e.g., 'auth,security')")
+	storyNewCmd.Flags().IntP("number", "n", 0, "Story number (must be > 0)")
 	if err := storyNewCmd.MarkFlagRequired("number"); err != nil {
 		panic(fmt.Sprintf("failed to mark number flag as required: %v", err))
 	}
 
 	// Add flags to commits command
-	storyCommitsCmd.Flags().StringP("id", "i", "", "Story ID")
+	storyCommitsCmd.Flags().StringP("id", "i", "", "Story ID to show commits for")
 	if err := storyCommitsCmd.MarkFlagRequired("id"); err != nil {
 		panic(fmt.Sprintf("failed to mark id flag as required: %v", err))
 	}
 
 	// Add flags to after-hash command
-	storyAfterHashCmd.Flags().StringP("hash", "H", "", "Commit hash")
+	storyAfterHashCmd.Flags().StringP("hash", "H", "", "Commit hash to filter stories from")
 	if err := storyAfterHashCmd.MarkFlagRequired("hash"); err != nil {
 		panic(fmt.Sprintf("failed to mark hash flag as required: %v", err))
 	}
 
 	// Add flags to by command
-	storyByCmd.Flags().StringP("author", "a", "", "Author name")
+	storyByCmd.Flags().StringP("author", "a", "", "Author name to filter stories by")
 	if err := storyByCmd.MarkFlagRequired("author"); err != nil {
 		panic(fmt.Sprintf("failed to mark author flag as required: %v", err))
 	}
 
 	// Add flags to files command
-	storyFilesCmd.Flags().StringP("id", "i", "", "Story ID")
+	storyFilesCmd.Flags().StringP("id", "i", "", "Story ID to show files for")
 	if err := storyFilesCmd.MarkFlagRequired("id"); err != nil {
 		panic(fmt.Sprintf("failed to mark id flag as required: %v", err))
 	}
 
 	// Add flags to diary command
-	storyDiaryCmd.Flags().StringP("id", "i", "", "Story ID")
+	storyDiaryCmd.Flags().StringP("id", "i", "", "Story ID to show diary for")
 	if err := storyDiaryCmd.MarkFlagRequired("id"); err != nil {
 		panic(fmt.Sprintf("failed to mark id flag as required: %v", err))
 	}
@@ -447,19 +486,19 @@ func init() {
 	storyDiaryCmd.Flags().StringP("end", "e", "", "End time (RFC3339 format)")
 
 	// Add flags to diff command
-	storyDiffCmd.Flags().StringP("id", "i", "", "Story ID")
+	storyDiffCmd.Flags().StringP("id", "i", "", "Story ID to show diff for")
 	if err := storyDiffCmd.MarkFlagRequired("id"); err != nil {
 		panic(fmt.Sprintf("failed to mark id flag as required: %v", err))
 	}
 	storyDiffCmd.Flags().StringP("start", "s", "", "Start time (RFC3339 format)")
 	storyDiffCmd.Flags().StringP("end", "e", "", "End time (RFC3339 format)")
 
-	// Add subcommands to story command
-	StoryCmd.AddCommand(storyNewCmd)
-	StoryCmd.AddCommand(storyAfterHashCmd)
-	StoryCmd.AddCommand(storyByCmd)
-	StoryCmd.AddCommand(storyFilesCmd)
-	StoryCmd.AddCommand(storyDiaryCmd)
-	StoryCmd.AddCommand(storyDiffCmd)
-	StoryCmd.AddCommand(storyCommitsCmd)
+	// Add commands in logical order
+	StoryCmd.AddCommand(storyNewCmd)       // Creation
+	StoryCmd.AddCommand(storyFilesCmd)     // Tracking
+	StoryCmd.AddCommand(storyCommitsCmd)   // Tracking
+	StoryCmd.AddCommand(storyDiaryCmd)     // History
+	StoryCmd.AddCommand(storyDiffCmd)      // History
+	StoryCmd.AddCommand(storyByCmd)        // Search/Filter
+	StoryCmd.AddCommand(storyAfterHashCmd) // Search/Filter
 }
