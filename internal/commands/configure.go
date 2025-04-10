@@ -84,8 +84,103 @@ var configureShowCmd = &cobra.Command{
 
 var configureCleanCmd = &cobra.Command{
 	Use:   "clean",
+	Short: "Remove configurations",
+	Long:  `Remove tracer configurations. Use subcommands to clean specific configurations.`,
+	RunE: func(cmd *cobra.Command, args []string) error {
+		return cmd.Help()
+	},
+}
+
+var configureCleanGitCmd = &cobra.Command{
+	Use:   "git",
+	Short: "Remove git configurations",
+	Long:  `Remove all git-related configurations, including project and user settings.`,
+	RunE: func(cmd *cobra.Command, args []string) error {
+		// Get current project name to clear project-specific configs
+		projectName, err := utils.GitClient.GetConfig("current.project")
+		if err == nil && projectName != "" {
+			// Clear project-specific user config
+			if err := utils.GitClient.SetConfig(fmt.Sprintf("%s.user", projectName), ""); err != nil {
+				return fmt.Errorf("failed to clear project user config: %w", err)
+			}
+		}
+
+		// Clear git config
+		if err := utils.GitClient.SetConfig("current.project", ""); err != nil {
+			return fmt.Errorf("failed to clear project config: %w", err)
+		}
+		if err := utils.GitClient.SetConfig("current.pair", ""); err != nil {
+			return fmt.Errorf("failed to clear pair config: %w", err)
+		}
+
+		fmt.Fprintf(cmd.OutOrStdout(), "Git configurations have been removed\n")
+		return nil
+	},
+}
+
+var configureCleanStoriesCmd = &cobra.Command{
+	Use:   "stories",
+	Short: "Remove story configurations",
+	Long:  `Remove all story-related configurations and data.`,
+	RunE: func(cmd *cobra.Command, args []string) error {
+		// Get repository-specific config directory first
+		repoConfigDir, err := utils.GetRepoConfigDir()
+		if err == nil {
+			// Remove stories directory
+			storiesDir := filepath.Join(repoConfigDir, "stories")
+			if err := os.RemoveAll(storiesDir); err != nil && !os.IsNotExist(err) {
+				return fmt.Errorf("failed to remove stories directory: %w", err)
+			}
+		}
+
+		// Get global config directory
+		globalConfigDir, err := utils.GetConfigDir()
+		if err != nil {
+			return fmt.Errorf("failed to get config directory: %w", err)
+		}
+
+		// Remove stories directory
+		storiesDir := filepath.Join(globalConfigDir, "stories")
+		if err := os.RemoveAll(storiesDir); err != nil && !os.IsNotExist(err) {
+			return fmt.Errorf("failed to remove stories directory: %w", err)
+		}
+
+		fmt.Fprintf(cmd.OutOrStdout(), "Story configurations have been removed\n")
+		return nil
+	},
+}
+
+var configureCleanJiraCmd = &cobra.Command{
+	Use:   "jira",
+	Short: "Remove Jira configurations",
+	Long:  `Remove all Jira-related configurations, including host, project, and authentication settings.`,
+	RunE: func(cmd *cobra.Command, args []string) error {
+		// Load current config
+		cfg, err := config.LoadConfig()
+		if err != nil {
+			return fmt.Errorf("failed to load config: %w", err)
+		}
+
+		// Clear Jira settings
+		cfg.JiraHost = ""
+		cfg.JiraToken = ""
+		cfg.JiraProject = ""
+		cfg.JiraUser = ""
+
+		// Save updated config
+		if err := config.SaveConfig(cfg); err != nil {
+			return fmt.Errorf("failed to save config: %w", err)
+		}
+
+		fmt.Fprintf(cmd.OutOrStdout(), "Jira configurations have been removed\n")
+		return nil
+	},
+}
+
+var configureCleanAllCmd = &cobra.Command{
+	Use:   "all",
 	Short: "Remove all configurations",
-	Long:  `Remove all tracer configurations, including project, user, and Jira settings.`,
+	Long:  `Remove all tracer configurations, including project, user, Jira settings, and stories.`,
 	RunE: func(cmd *cobra.Command, args []string) error {
 		// Get current project name to clear project-specific configs
 		projectName, err := utils.GitClient.GetConfig("current.project")
@@ -104,6 +199,11 @@ var configureCleanCmd = &cobra.Command{
 			if err := os.Remove(repoConfigFile); err != nil && !os.IsNotExist(err) {
 				return fmt.Errorf("failed to remove repository config: %w", err)
 			}
+			// Remove stories directory
+			storiesDir := filepath.Join(repoConfigDir, "stories")
+			if err := os.RemoveAll(storiesDir); err != nil && !os.IsNotExist(err) {
+				return fmt.Errorf("failed to remove stories directory: %w", err)
+			}
 		}
 
 		// Get global config directory
@@ -116,6 +216,11 @@ var configureCleanCmd = &cobra.Command{
 		globalConfigFile := filepath.Join(globalConfigDir, config.DefaultConfigFile)
 		if err := os.Remove(globalConfigFile); err != nil && !os.IsNotExist(err) {
 			return fmt.Errorf("failed to remove global config: %w", err)
+		}
+		// Remove stories directory
+		storiesDir := filepath.Join(globalConfigDir, "stories")
+		if err := os.RemoveAll(storiesDir); err != nil && !os.IsNotExist(err) {
+			return fmt.Errorf("failed to remove stories directory: %w", err)
 		}
 
 		// Clear git config
@@ -139,6 +244,12 @@ func init() {
 	// Add subcommands
 	ConfigureCmd.AddCommand(configureShowCmd)
 	ConfigureCmd.AddCommand(configureCleanCmd)
+
+	// Add subcommands to configure clean
+	configureCleanCmd.AddCommand(configureCleanGitCmd)
+	configureCleanCmd.AddCommand(configureCleanStoriesCmd)
+	configureCleanCmd.AddCommand(configureCleanJiraCmd)
+	configureCleanCmd.AddCommand(configureCleanAllCmd)
 }
 
 func configureProject(projectName string) error {

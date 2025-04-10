@@ -1,6 +1,7 @@
 package commands
 
 import (
+	"bytes"
 	"fmt"
 	"os"
 	"path/filepath"
@@ -320,9 +321,59 @@ func TestConfigureClean(t *testing.T) {
 		assert.NoError(t, err)
 	}()
 
-	// Initialize git repository
-	_, err = utils.RunCommand("git", "init")
+	// Create a mock git client
+	mockGit := utils.NewMockGit()
+	utils.GitClient = mockGit
+
+	// Configure mock behavior
+	mockGit.(*utils.MockGit).GetGitRootFunc = func() (string, error) {
+		return repoDir, nil
+	}
+
+	// Create root command and add configure command
+	rootCmd := &cobra.Command{Use: "tracer"}
+	rootCmd.AddCommand(ConfigureCmd)
+
+	// Set up the command arguments
+	args := []string{"configure", "clean"}
+	rootCmd.SetArgs(args)
+
+	// Create a buffer to capture output
+	var buf bytes.Buffer
+	rootCmd.SetOut(&buf)
+
+	// Execute the command
+	err = rootCmd.Execute()
 	assert.NoError(t, err)
+
+	// Verify help output
+	output := buf.String()
+	assert.Contains(t, output, "Remove tracer configurations")
+	assert.Contains(t, output, "Use subcommands to clean specific configurations")
+	assert.Contains(t, output, "all")
+	assert.Contains(t, output, "git")
+	assert.Contains(t, output, "jira")
+	assert.Contains(t, output, "stories")
+}
+
+func TestConfigureCleanGit(t *testing.T) {
+	// Create a temporary directory for testing
+	tmpDir := t.TempDir()
+	repoDir := filepath.Join(tmpDir, "repo")
+	err := os.MkdirAll(repoDir, 0755)
+	assert.NoError(t, err)
+
+	// Save current directory
+	currentDir, err := os.Getwd()
+	assert.NoError(t, err)
+
+	// Change to test directory
+	err = os.Chdir(repoDir)
+	assert.NoError(t, err)
+	defer func() {
+		err = os.Chdir(currentDir)
+		assert.NoError(t, err)
+	}()
 
 	// Create a mock git client
 	mockGit := utils.NewMockGit()
@@ -342,7 +393,219 @@ func TestConfigureClean(t *testing.T) {
 		return repoDir, nil
 	}
 
-	// Create repository-specific config directory and file
+	// Create root command and add configure command
+	rootCmd := &cobra.Command{Use: "tracer"}
+	rootCmd.AddCommand(ConfigureCmd)
+
+	// Set up the command arguments
+	args := []string{"configure", "clean", "git"}
+	rootCmd.SetArgs(args)
+
+	// Create a buffer to capture output
+	var buf bytes.Buffer
+	rootCmd.SetOut(&buf)
+
+	// Execute the command
+	err = rootCmd.Execute()
+	assert.NoError(t, err)
+
+	// Verify output
+	output := buf.String()
+	assert.Contains(t, output, "Git configurations have been removed")
+}
+
+func TestConfigureCleanStories(t *testing.T) {
+	// Create a temporary directory for testing
+	tmpDir := t.TempDir()
+	repoDir := filepath.Join(tmpDir, "repo")
+	err := os.MkdirAll(repoDir, 0755)
+	assert.NoError(t, err)
+
+	// Save current directory
+	currentDir, err := os.Getwd()
+	assert.NoError(t, err)
+
+	// Change to test directory
+	err = os.Chdir(repoDir)
+	assert.NoError(t, err)
+	defer func() {
+		err = os.Chdir(currentDir)
+		assert.NoError(t, err)
+	}()
+
+	// Create a mock git client
+	mockGit := utils.NewMockGit()
+	utils.GitClient = mockGit
+
+	// Configure mock behavior
+	mockGit.(*utils.MockGit).GetGitRootFunc = func() (string, error) {
+		return repoDir, nil
+	}
+
+	// Create repository-specific config directory and stories directory
+	repoConfigDir := filepath.Join(repoDir, ".tracer")
+	err = os.MkdirAll(repoConfigDir, 0755)
+	assert.NoError(t, err)
+
+	repoStoriesDir := filepath.Join(repoConfigDir, "stories")
+	err = os.MkdirAll(repoStoriesDir, 0755)
+	assert.NoError(t, err)
+
+	// Create global config directory and stories directory
+	globalConfigDir := filepath.Join(tmpDir, ".tracer")
+	err = os.MkdirAll(globalConfigDir, 0755)
+	assert.NoError(t, err)
+
+	globalStoriesDir := filepath.Join(globalConfigDir, "stories")
+	err = os.MkdirAll(globalStoriesDir, 0755)
+	assert.NoError(t, err)
+
+	// Override the global config directory for testing
+	utils.TestConfigDir = globalConfigDir
+
+	// Create root command and add configure command
+	rootCmd := &cobra.Command{Use: "tracer"}
+	rootCmd.AddCommand(ConfigureCmd)
+
+	// Set up the command arguments
+	args := []string{"configure", "clean", "stories"}
+	rootCmd.SetArgs(args)
+
+	// Create a buffer to capture output
+	var buf bytes.Buffer
+	rootCmd.SetOut(&buf)
+
+	// Execute the command
+	err = rootCmd.Execute()
+	assert.NoError(t, err)
+
+	// Verify output
+	output := buf.String()
+	assert.Contains(t, output, "Story configurations have been removed")
+
+	// Verify that both stories directories were removed
+	_, err = os.Stat(repoStoriesDir)
+	assert.True(t, os.IsNotExist(err))
+
+	_, err = os.Stat(globalStoriesDir)
+	assert.True(t, os.IsNotExist(err))
+
+	// Reset test config directory
+	utils.TestConfigDir = ""
+}
+
+func TestConfigureCleanJira(t *testing.T) {
+	// Create a temporary directory for testing
+	tmpDir := t.TempDir()
+	repoDir := filepath.Join(tmpDir, "repo")
+	err := os.MkdirAll(repoDir, 0755)
+	assert.NoError(t, err)
+
+	// Save current directory
+	currentDir, err := os.Getwd()
+	assert.NoError(t, err)
+
+	// Change to test directory
+	err = os.Chdir(repoDir)
+	assert.NoError(t, err)
+	defer func() {
+		err = os.Chdir(currentDir)
+		assert.NoError(t, err)
+	}()
+
+	// Create a mock git client
+	mockGit := utils.NewMockGit()
+	utils.GitClient = mockGit
+
+	// Configure mock behavior
+	mockGit.(*utils.MockGit).GetGitRootFunc = func() (string, error) {
+		return repoDir, nil
+	}
+
+	// Create config directory and file
+	configDir := filepath.Join(repoDir, ".tracer")
+	err = os.MkdirAll(configDir, 0755)
+	assert.NoError(t, err)
+
+	configFile := filepath.Join(configDir, "config.yaml")
+	cfg := &config.Config{
+		JiraHost:    "https://jira.example.com",
+		JiraToken:   "test-token",
+		JiraProject: "TEST",
+		JiraUser:    "test-user",
+	}
+	data, err := yaml.Marshal(cfg)
+	assert.NoError(t, err)
+	err = os.WriteFile(configFile, data, utils.DefaultFilePerm)
+	assert.NoError(t, err)
+
+	// Create root command and add configure command
+	rootCmd := &cobra.Command{Use: "tracer"}
+	rootCmd.AddCommand(ConfigureCmd)
+
+	// Set up the command arguments
+	args := []string{"configure", "clean", "jira"}
+	rootCmd.SetArgs(args)
+
+	// Create a buffer to capture output
+	var buf bytes.Buffer
+	rootCmd.SetOut(&buf)
+
+	// Execute the command
+	err = rootCmd.Execute()
+	assert.NoError(t, err)
+
+	// Verify output
+	output := buf.String()
+	assert.Contains(t, output, "Jira configurations have been removed")
+
+	// Verify that Jira settings were cleared
+	updatedCfg, err := config.LoadConfig()
+	assert.NoError(t, err)
+	assert.Empty(t, updatedCfg.JiraHost)
+	assert.Empty(t, updatedCfg.JiraToken)
+	assert.Empty(t, updatedCfg.JiraProject)
+	assert.Empty(t, updatedCfg.JiraUser)
+}
+
+func TestConfigureCleanAll(t *testing.T) {
+	// Create a temporary directory for testing
+	tmpDir := t.TempDir()
+	repoDir := filepath.Join(tmpDir, "repo")
+	err := os.MkdirAll(repoDir, 0755)
+	assert.NoError(t, err)
+
+	// Save current directory
+	currentDir, err := os.Getwd()
+	assert.NoError(t, err)
+
+	// Change to test directory
+	err = os.Chdir(repoDir)
+	assert.NoError(t, err)
+	defer func() {
+		err = os.Chdir(currentDir)
+		assert.NoError(t, err)
+	}()
+
+	// Create a mock git client
+	mockGit := utils.NewMockGit()
+	utils.GitClient = mockGit
+
+	// Configure mock behavior
+	mockGit.(*utils.MockGit).SetConfigFunc = func(key, value string) error {
+		return nil
+	}
+	mockGit.(*utils.MockGit).GetConfigFunc = func(key string) (string, error) {
+		if key == "current.project" {
+			return "test-project", nil
+		}
+		return "", nil
+	}
+	mockGit.(*utils.MockGit).GetGitRootFunc = func() (string, error) {
+		return repoDir, nil
+	}
+
+	// Create repository-specific config directory and files
 	repoConfigDir := filepath.Join(repoDir, ".tracer")
 	err = os.MkdirAll(repoConfigDir, 0755)
 	assert.NoError(t, err)
@@ -358,7 +621,11 @@ func TestConfigureClean(t *testing.T) {
 	err = os.WriteFile(repoConfigFile, data, utils.DefaultFilePerm)
 	assert.NoError(t, err)
 
-	// Create global config directory and file
+	repoStoriesDir := filepath.Join(repoConfigDir, "stories")
+	err = os.MkdirAll(repoStoriesDir, 0755)
+	assert.NoError(t, err)
+
+	// Create global config directory and files
 	globalConfigDir := filepath.Join(tmpDir, ".tracer")
 	err = os.MkdirAll(globalConfigDir, 0755)
 	assert.NoError(t, err)
@@ -374,6 +641,10 @@ func TestConfigureClean(t *testing.T) {
 	err = os.WriteFile(globalConfigFile, data, utils.DefaultFilePerm)
 	assert.NoError(t, err)
 
+	globalStoriesDir := filepath.Join(globalConfigDir, "stories")
+	err = os.MkdirAll(globalStoriesDir, 0755)
+	assert.NoError(t, err)
+
 	// Override the global config directory for testing
 	utils.TestConfigDir = globalConfigDir
 
@@ -382,18 +653,32 @@ func TestConfigureClean(t *testing.T) {
 	rootCmd.AddCommand(ConfigureCmd)
 
 	// Set up the command arguments
-	args := []string{"configure", "clean"}
+	args := []string{"configure", "clean", "all"}
 	rootCmd.SetArgs(args)
+
+	// Create a buffer to capture output
+	var buf bytes.Buffer
+	rootCmd.SetOut(&buf)
 
 	// Execute the command
 	err = rootCmd.Execute()
 	assert.NoError(t, err)
 
-	// Verify that both config files were removed
+	// Verify output
+	output := buf.String()
+	assert.Contains(t, output, "All configurations have been removed")
+
+	// Verify that all configurations were removed
 	_, err = os.Stat(repoConfigFile)
 	assert.True(t, os.IsNotExist(err))
 
+	_, err = os.Stat(repoStoriesDir)
+	assert.True(t, os.IsNotExist(err))
+
 	_, err = os.Stat(globalConfigFile)
+	assert.True(t, os.IsNotExist(err))
+
+	_, err = os.Stat(globalStoriesDir)
 	assert.True(t, os.IsNotExist(err))
 
 	// Reset test config directory
