@@ -213,22 +213,38 @@ Here are the changes to analyze:
 	// Clean up the response
 	message = strings.TrimSpace(message)
 
-	// Split the message into lines
+	// Remove any conversational or closing messages
 	lines := strings.Split(message, "\n")
-	if len(lines) == 0 {
-		return "", fmt.Errorf("empty response from llama API")
+	var cleanedLines []string
+	for _, line := range lines {
+		// Skip lines that look like conversational messages
+		if strings.HasPrefix(strings.ToLower(line), "let me know") ||
+			strings.HasPrefix(strings.ToLower(line), "i hope this") ||
+			strings.HasPrefix(strings.ToLower(line), "please let me") ||
+			strings.HasPrefix(strings.ToLower(line), "if you have any") ||
+			strings.HasPrefix(strings.ToLower(line), "feel free to") ||
+			strings.HasPrefix(strings.ToLower(line), "is there anything") ||
+			strings.HasPrefix(strings.ToLower(line), "would you like") ||
+			strings.HasPrefix(strings.ToLower(line), "do you need") {
+			continue
+		}
+		cleanedLines = append(cleanedLines, line)
+	}
+
+	if len(cleanedLines) == 0 {
+		return "", fmt.Errorf("empty response after cleaning conversational messages")
 	}
 
 	// Ensure the first line follows conventional commit format
-	firstLine := lines[0]
+	firstLine := cleanedLines[0]
 	if !strings.Contains(firstLine, ":") {
 		firstLine = "feat: " + firstLine
 	}
 
 	// Reconstruct the message with proper formatting
 	message = firstLine
-	if len(lines) > 1 {
-		message += "\n\n" + strings.Join(lines[1:], "\n")
+	if len(cleanedLines) > 1 {
+		message += "\n\n" + strings.Join(cleanedLines[1:], "\n")
 	}
 
 	return message, nil
