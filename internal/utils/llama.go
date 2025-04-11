@@ -107,17 +107,64 @@ Standardize error handling across the application.
 Here are the changes to analyze:
 `
 
-	// Add all diffs to the prompt
+	// Add all diffs to the prompt with better structure
+	prompt += "\nCHANGES TO ANALYZE:\n\n"
+
+	// Group changes by file
+	fileChanges := make(map[string][]string)
 	for _, diff := range diffs {
-		prompt += "\n" + diff + "\n"
+		// Split diff into lines
+		lines := strings.Split(diff, "\n")
+		if len(lines) == 0 {
+			continue
+		}
+
+		// Extract file name from first line
+		fileLine := lines[0]
+		if !strings.HasPrefix(fileLine, "File: ") {
+			continue
+		}
+		fileName := strings.TrimPrefix(fileLine, "File: ")
+
+		// Store the rest of the diff for this file
+		fileChanges[fileName] = append(fileChanges[fileName], strings.Join(lines[1:], "\n"))
+	}
+
+	// Format changes for each file
+	for fileName, changes := range fileChanges {
+		prompt += fmt.Sprintf("File: %s\n", fileName)
+		prompt += "Changes:\n"
+		for _, change := range changes {
+			// Parse the diff header (e.g., @@ -10,6 +10,7 @@)
+			lines := strings.Split(change, "\n")
+			if len(lines) > 0 && strings.HasPrefix(lines[0], "@@") {
+				// Extract line numbers
+				lineInfo := lines[0]
+				prompt += fmt.Sprintf("Lines affected: %s\n", lineInfo)
+
+				// Add the actual changes
+				for _, line := range lines[1:] {
+					if strings.HasPrefix(line, "+") {
+						prompt += fmt.Sprintf("Added: %s\n", strings.TrimPrefix(line, "+"))
+					} else if strings.HasPrefix(line, "-") {
+						prompt += fmt.Sprintf("Removed: %s\n", strings.TrimPrefix(line, "-"))
+					} else {
+						prompt += fmt.Sprintf("Context: %s\n", line)
+					}
+				}
+			}
+			prompt += "\n"
+		}
+		prompt += "\n"
 	}
 
 	// Call llama API
 	reqBody := map[string]interface{}{
 		"model":       "llama3",
 		"prompt":      prompt,
-		"max_tokens":  500,
+		"max_tokens":  1000,
 		"temperature": 0.7,
+		"stream":      false,
 	}
 
 	jsonBody, err := json.Marshal(reqBody)
