@@ -37,6 +37,8 @@ IMPORTANT INSTRUCTIONS:
 5. CAREFULLY analyze the actual code changes in the diff
 6. Focus on the specific changes made to the code, not general improvements
 7. Be precise about what was added, removed, or modified
+8. DO NOT make assumptions about code functionality not shown in the diff
+9. ONLY describe changes that are visible in the provided code diff
 
 The commit message MUST follow this exact format:
 <type>(<scope>): <description>
@@ -58,6 +60,7 @@ Where:
   * Look at the file paths in the changes to determine the scope
   * If changes affect multiple scopes, use the most relevant one
   * Be specific about which part of the codebase was changed
+  * The scope should match the directory structure in the diff
 
 - description: A clear, concise summary of the change in present tense, imperative mood
   * Good: "add user authentication"
@@ -65,6 +68,7 @@ Where:
   * Must be under 50 characters
   * Must describe the main purpose of the changes
   * Must reflect the actual code changes in the diff
+  * Should match the visible changes in the code
 
 - body: REQUIRED. Must include:
   * A detailed explanation of what changed and why
@@ -73,6 +77,7 @@ Where:
   * Impact of the changes
   * Any breaking changes or migration steps if applicable
   * Each bullet point should reference specific changes from the diff
+  * Each change should be verifiable in the provided code diff
 
 IMPORTANT RULES:
 1. ALWAYS include a scope in parentheses
@@ -87,6 +92,8 @@ IMPORTANT RULES:
 10. DO NOT include any conversational text or questions
 11. Each bullet point must correspond to a specific change in the diff
 12. Be precise about what was added, removed, or modified
+13. DO NOT describe functionality not shown in the code changes
+14. Verify each change against the actual diff before including it
 
 Examples of good commit messages:
 
