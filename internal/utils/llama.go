@@ -34,6 +34,9 @@ IMPORTANT INSTRUCTIONS:
 2. DO NOT ask for feedback or confirmation
 3. ONLY provide the commit message in the exact format specified below
 4. DO NOT add any additional text outside the commit message format
+5. CAREFULLY analyze the actual code changes in the diff
+6. Focus on the specific changes made to the code, not general improvements
+7. Be precise about what was added, removed, or modified
 
 The commit message MUST follow this exact format:
 <type>(<scope>): <description>
@@ -54,12 +57,14 @@ Where:
 - scope: REQUIRED. What part of the codebase is affected (e.g., api, core, ui, tests)
   * Look at the file paths in the changes to determine the scope
   * If changes affect multiple scopes, use the most relevant one
+  * Be specific about which part of the codebase was changed
 
 - description: A clear, concise summary of the change in present tense, imperative mood
   * Good: "add user authentication"
   * Bad: "added user authentication" or "adding user authentication"
   * Must be under 50 characters
   * Must describe the main purpose of the changes
+  * Must reflect the actual code changes in the diff
 
 - body: REQUIRED. Must include:
   * A detailed explanation of what changed and why
@@ -67,6 +72,7 @@ Where:
   * Technical details that might be important
   * Impact of the changes
   * Any breaking changes or migration steps if applicable
+  * Each bullet point should reference specific changes from the diff
 
 IMPORTANT RULES:
 1. ALWAYS include a scope in parentheses
@@ -79,26 +85,28 @@ IMPORTANT RULES:
 8. Focus on the actual changes shown in the diff
 9. Include specific file names and line numbers when relevant
 10. DO NOT include any conversational text or questions
+11. Each bullet point must correspond to a specific change in the diff
+12. Be precise about what was added, removed, or modified
 
 Examples of good commit messages:
 
 1. Feature Addition:
-feat(auth): implement JWT authentication
+feat(utils): enhance commit message generation
 
-Add JWT-based authentication system to secure API endpoints.
-- Implement JWT token generation and validation
-- Add middleware for protected routes
-- Update API documentation with authentication details
-- Add test coverage for authentication flow
+Improve commit message generation with better prompt handling.
+- Add explicit instructions to prevent conversational messages
+- Update prompt format with clearer structure
+- Add specific rules for message formatting
+- Include examples of proper commit messages
 
 2. Bug Fix:
-fix(api): handle null pointer in user service
+fix(api): correct response parsing in user service
 
-Prevent application crash when user data is missing.
-- Add null checks in user service methods
-- Return appropriate error responses
-- Add test cases for null scenarios
-- Update error logging to include context
+Fix incorrect parsing of API responses in user service.
+- Update response field validation logic
+- Add proper error handling for missing fields
+- Fix type assertion for response data
+- Add test cases for error scenarios
 
 3. Refactoring:
 refactor(core): improve error handling
