@@ -103,34 +103,21 @@ IMPORTANT RULES:
 15. DO NOT make up function names or variables
 16. ONLY reference code that is actually shown in the changes
 
-Examples of good commit messages:
+Here is a template for your commit message based on the actual changes:
 
-1. Feature Addition:
-feat(utils): add summary section to prompt formatting
+<type>(<scope>): <description>
 
-Add summary section to improve change analysis.
-- Add summary section to show line count changes
-- Format changes by file for better organization
-- Include addition and removal counts per file
-- Improve change visibility in the prompt
+<blank line>
+<body>
 
-2. Bug Fix:
-fix(api): correct response parsing in user service
+For example, if the changes are about improving the prompt formatting:
+feat(utils): improve prompt formatting for change analysis
 
-Fix incorrect parsing of API responses in user service.
-- Update response field validation logic
-- Add proper error handling for missing fields
-- Fix type assertion for response data
-- Add test cases for error scenarios
-
-3. Refactoring:
-refactor(core): improve error handling
-
-Standardize error handling across the application.
-- Create custom error types for better error classification
-- Implement consistent error response format
-- Update error logging with structured data
-- Add documentation for error handling patterns
+Enhance how changes are presented in the prompt.
+- Add clear labeling for additions, removals, and context
+- Improve change visibility with better formatting
+- Add explicit instructions about change analysis
+- Include summary section for better overview
 
 Here are the changes to analyze:
 `
