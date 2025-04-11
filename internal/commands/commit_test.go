@@ -1,6 +1,7 @@
 package commands
 
 import (
+	"bytes"
 	"encoding/json"
 	"fmt"
 	"net/http"
@@ -444,4 +445,131 @@ func TestAutoCommitErrorHandling(t *testing.T) {
 			assert.Contains(t, err.Error(), tt.expectedError)
 		})
 	}
+}
+
+func TestPreviewCommit(t *testing.T) {
+	// Create a temporary directory for testing
+	tmpDir := t.TempDir()
+	repoDir := filepath.Join(tmpDir, "repo")
+	err := os.MkdirAll(repoDir, 0755)
+	assert.NoError(t, err)
+
+	// Save current directory
+	currentDir, err := os.Getwd()
+	assert.NoError(t, err)
+
+	// Change to test directory
+	err = os.Chdir(repoDir)
+	assert.NoError(t, err)
+	defer func() {
+		err = os.Chdir(currentDir)
+		assert.NoError(t, err)
+	}()
+
+	// Create a test server to mock the Llama API
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		response := map[string]interface{}{
+			"response": "feat: add new feature",
+		}
+		w.Header().Set("Content-Type", "application/json")
+		err := json.NewEncoder(w).Encode(response)
+		assert.NoError(t, err)
+	}))
+	defer server.Close()
+
+	// Override llama API URL for testing
+	err = utils.SetLlamaAPIURL(server.URL)
+	assert.NoError(t, err)
+
+	// Create a mock git client
+	mockGit := utils.NewMockGit()
+	utils.GitClient = mockGit
+
+	// Configure mock behavior
+	mockGit.(*utils.MockGit).GetUnstagedFilesFunc = func() ([]string, error) {
+		return []string{"modified.go"}, nil
+	}
+	mockGit.(*utils.MockGit).GetUntrackedFilesFunc = func() ([]string, error) {
+		return []string{"new.go"}, nil
+	}
+	mockGit.(*utils.MockGit).GetDiffFunc = func(file string) (string, error) {
+		return "diff content", nil
+	}
+
+	// Create test files
+	err = os.WriteFile(filepath.Join(repoDir, "modified.go"), []byte("package main"), 0644)
+	assert.NoError(t, err)
+	err = os.WriteFile(filepath.Join(repoDir, "new.go"), []byte("package main"), 0644)
+	assert.NoError(t, err)
+
+	// Create root command and add commit command
+	rootCmd := &cobra.Command{Use: "tracer"}
+	rootCmd.AddCommand(CommitCmd)
+
+	// Set up the command arguments
+	args := []string{"commit", "preview", "--auto"}
+
+	// Set the command's args
+	rootCmd.SetArgs(args)
+
+	// Create a buffer to capture output
+	var buf bytes.Buffer
+	rootCmd.SetOut(&buf)
+
+	// Execute the command
+	err = rootCmd.Execute()
+	assert.NoError(t, err)
+
+	// Verify output
+	output := buf.String()
+	assert.Contains(t, output, "Preview of commit message")
+	assert.Contains(t, output, "feat: add new feature")
+	assert.Contains(t, output, "tracer commit create --auto")
+}
+
+func TestPreviewCommitNoChanges(t *testing.T) {
+	// Create a temporary directory for testing
+	tmpDir := t.TempDir()
+	repoDir := filepath.Join(tmpDir, "repo")
+	err := os.MkdirAll(repoDir, 0755)
+	assert.NoError(t, err)
+
+	// Save current directory
+	currentDir, err := os.Getwd()
+	assert.NoError(t, err)
+
+	// Change to test directory
+	err = os.Chdir(repoDir)
+	assert.NoError(t, err)
+	defer func() {
+		err = os.Chdir(currentDir)
+		assert.NoError(t, err)
+	}()
+
+	// Create a mock git client
+	mockGit := utils.NewMockGit()
+	utils.GitClient = mockGit
+
+	// Configure mock behavior
+	mockGit.(*utils.MockGit).GetUnstagedFilesFunc = func() ([]string, error) {
+		return nil, nil
+	}
+	mockGit.(*utils.MockGit).GetUntrackedFilesFunc = func() ([]string, error) {
+		return nil, nil
+	}
+
+	// Create root command and add commit command
+	rootCmd := &cobra.Command{Use: "tracer"}
+	rootCmd.AddCommand(CommitCmd)
+
+	// Set up the command arguments
+	args := []string{"commit", "preview", "--auto"}
+
+	// Set the command's args
+	rootCmd.SetArgs(args)
+
+	// Execute the command
+	err = rootCmd.Execute()
+	assert.Error(t, err)
+	assert.Contains(t, err.Error(), "no changes to preview")
 }

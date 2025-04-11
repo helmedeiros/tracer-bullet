@@ -195,9 +195,6 @@ func makeAPIRequest(prompt string) (map[string]interface{}, error) {
 		return nil, fmt.Errorf("failed to decode llama API response: %w", err)
 	}
 
-	// Debug: Print the full response
-	fmt.Printf("Llama API Response: %+v\n", result)
-
 	return result, nil
 }
 
