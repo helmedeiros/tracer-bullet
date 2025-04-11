@@ -410,10 +410,6 @@ Flags:
 			return fmt.Errorf("failed to generate commit message: %w", err)
 		}
 
-		// Clean up the commit message
-		commitMsg = strings.TrimPrefix(commitMsg, "Here is a commit message that follows the exact format you specified:\n\n")
-		commitMsg = strings.TrimPrefix(commitMsg, "Here is a commit message for the provided changes:\n\n")
-
 		// Display the preview
 		fmt.Fprintf(cmd.OutOrStdout(), "\nPreview of commit message:\n\n%s\n", commitMsg)
 		fmt.Fprintf(cmd.OutOrStdout(), "\nTo create this commit, run:\n  tracer commit create --auto\n")
