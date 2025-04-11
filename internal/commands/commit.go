@@ -353,8 +353,77 @@ Try these steps:
 	},
 }
 
+var commitPreviewCmd = &cobra.Command{
+	Use:   "preview",
+	Short: "Preview a commit message",
+	Long: `Preview a commit message that would be generated from your changes.
+
+Examples:
+  tracer commit preview --auto  # Preview auto-generated commit message from changes
+
+Flags:
+  --auto    Optional. Automatically generate commit message from changes`,
+	RunE: func(cmd *cobra.Command, args []string) error {
+		// Get flag values
+		auto, _ := cmd.Flags().GetBool("auto")
+
+		if !auto {
+			return fmt.Errorf("preview command currently only supports --auto flag")
+		}
+
+		// Get unstaged and untracked files
+		unstagedFiles, err := utils.GitClient.GetUnstagedFiles()
+		if err != nil {
+			return fmt.Errorf("failed to get unstaged files: %w", err)
+		}
+
+		untrackedFiles, err := utils.GitClient.GetUntrackedFiles()
+		if err != nil {
+			return fmt.Errorf("failed to get untracked files: %w", err)
+		}
+
+		if len(unstagedFiles) == 0 && len(untrackedFiles) == 0 {
+			return fmt.Errorf("no changes to preview")
+		}
+
+		// Get diffs for all files
+		var diffs []string
+		for _, file := range unstagedFiles {
+			diff, err := utils.GitClient.GetDiff(file)
+			if err != nil {
+				return fmt.Errorf("failed to get diff for %s: %w", file, err)
+			}
+			diffs = append(diffs, fmt.Sprintf("File: %s\n%s", file, diff))
+		}
+
+		for _, file := range untrackedFiles {
+			content, err := os.ReadFile(file)
+			if err != nil {
+				return fmt.Errorf("failed to read untracked file %s: %w", file, err)
+			}
+			diffs = append(diffs, fmt.Sprintf("New file: %s\n%s", file, string(content)))
+		}
+
+		// Use llama to generate commit message
+		commitMsg, err := utils.GenerateCommitMessage(diffs)
+		if err != nil {
+			return fmt.Errorf("failed to generate commit message: %w", err)
+		}
+
+		// Clean up the commit message
+		commitMsg = strings.TrimPrefix(commitMsg, "Here is a commit message that follows the exact format you specified:\n\n")
+
+		// Display the preview
+		fmt.Fprintf(cmd.OutOrStdout(), "\nPreview of commit message:\n\n%s\n", commitMsg)
+		fmt.Fprintf(cmd.OutOrStdout(), "\nTo create this commit, run:\n  tracer commit create --auto\n")
+
+		return nil
+	},
+}
+
 func init() {
 	CommitCmd.AddCommand(commitCreateCmd)
+	CommitCmd.AddCommand(commitPreviewCmd)
 
 	// Add flags with better descriptions
 	commitCreateCmd.Flags().String("type", "", "Type of change (feat, fix, docs, style, refactor, test, chore)")
@@ -364,6 +433,9 @@ func init() {
 	commitCreateCmd.Flags().Bool("breaking", false, "Mark as a breaking change")
 	commitCreateCmd.Flags().Bool("jira", false, "Include Jira story URL in commit body")
 	commitCreateCmd.Flags().Bool("auto", false, "Automatically generate commit message from changes")
+
+	// Add flags for preview command
+	commitPreviewCmd.Flags().Bool("auto", false, "Automatically generate commit message from changes")
 
 	// Mark required flags only if auto is not set
 	commitCreateCmd.PreRunE = func(cmd *cobra.Command, args []string) error {
