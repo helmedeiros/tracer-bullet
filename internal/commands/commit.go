@@ -265,6 +265,12 @@ Usage:
 		// Add breaking change footer if needed
 		commitMsg = addBreakingChange(commitMsg, message, body, breaking)
 
+		// Clean up the commit message
+		commitMsg = strings.TrimPrefix(commitMsg, "Here is a commit message that follows the exact format you specified:\n\n")
+		commitMsg = strings.TrimPrefix(commitMsg, "Here is a commit message for the provided changes:\n\n")
+		commitMsg = strings.TrimPrefix(commitMsg, "Here is the generated commit message:\n\n")
+		commitMsg = strings.TrimPrefix(commitMsg, "Here is the commit message:\n\n")
+
 		// Create temporary file for commit message
 		configDir, err := utils.GetConfigDir()
 		if err != nil {
@@ -409,6 +415,12 @@ Flags:
 		if err != nil {
 			return fmt.Errorf("failed to generate commit message: %w", err)
 		}
+
+		// Clean up the commit message
+		commitMsg = strings.TrimPrefix(commitMsg, "Here is a commit message that follows the exact format you specified:\n\n")
+		commitMsg = strings.TrimPrefix(commitMsg, "Here is a commit message for the provided changes:\n\n")
+		commitMsg = strings.TrimPrefix(commitMsg, "Here is the generated commit message:\n\n")
+		commitMsg = strings.TrimPrefix(commitMsg, "Here is the commit message:\n\n")
 
 		// Display the preview
 		fmt.Fprintf(cmd.OutOrStdout(), "\nPreview of commit message:\n\n%s\n", commitMsg)

@@ -52,6 +52,8 @@ The commit message MUST follow this exact format:
 A blank line must separate the header from the body.
 The body should list the key changes with bullet points.
 
+IMPORTANT: Do not include any introductory text or explanations. Provide only the commit message directly.
+
 Examples of good commit messages:
 
 feat(auth): add user authentication
