@@ -118,6 +118,7 @@ Examples:
   tracer commit create --type feat --message "Add user authentication"
   tracer commit create --type fix --scope api --message "Fix timeout issue"
   tracer commit create --type feat --message "Breaking change" --breaking
+  tracer commit create --auto  # Automatically generate commit message from changes
 
 Commit Types:
   feat     - A new feature
@@ -134,7 +135,8 @@ Flags:
   --scope    Optional. The scope of the change (e.g., api, core)
   --body     Optional. Detailed description of the change
   --breaking Optional. Mark as a breaking change
-  --jira    Optional. Include Jira story URL in commit body`,
+  --jira    Optional. Include Jira story URL in commit body
+  --auto    Optional. Automatically generate commit message from changes`,
 	RunE: func(cmd *cobra.Command, args []string) error {
 		// Get flag values
 		commitType, _ := cmd.Flags().GetString("type")
@@ -143,6 +145,80 @@ Flags:
 		body, _ := cmd.Flags().GetString("body")
 		breaking, _ := cmd.Flags().GetBool("breaking")
 		includeJira, _ := cmd.Flags().GetBool("jira")
+		auto, _ := cmd.Flags().GetBool("auto")
+
+		// If auto flag is set, generate commit message from changes
+		if auto {
+			// Get unstaged and untracked files
+			unstagedFiles, err := utils.GitClient.GetUnstagedFiles()
+			if err != nil {
+				return fmt.Errorf("failed to get unstaged files: %w", err)
+			}
+
+			untrackedFiles, err := utils.GitClient.GetUntrackedFiles()
+			if err != nil {
+				return fmt.Errorf("failed to get untracked files: %w", err)
+			}
+
+			if len(unstagedFiles) == 0 && len(untrackedFiles) == 0 {
+				return fmt.Errorf("no changes to commit")
+			}
+
+			// Get diffs for all files
+			var diffs []string
+			for _, file := range unstagedFiles {
+				diff, err := utils.GitClient.GetDiff(file)
+				if err != nil {
+					return fmt.Errorf("failed to get diff for %s: %w", file, err)
+				}
+				diffs = append(diffs, fmt.Sprintf("File: %s\n%s", file, diff))
+			}
+
+			for _, file := range untrackedFiles {
+				content, err := os.ReadFile(file)
+				if err != nil {
+					return fmt.Errorf("failed to read untracked file %s: %w", file, err)
+				}
+				diffs = append(diffs, fmt.Sprintf("New file: %s\n%s", file, string(content)))
+			}
+
+			// Use llama to generate commit message
+			commitMsg, err := utils.GenerateCommitMessage(diffs)
+			if err != nil {
+				return fmt.Errorf("failed to generate commit message: %w", err)
+			}
+
+			// Create temporary file for commit message
+			tmpFile := filepath.Join(os.TempDir(), fmt.Sprintf("tracer-commit-msg-%d", time.Now().UnixNano()))
+			if err := os.WriteFile(tmpFile, []byte(commitMsg), 0600); err != nil {
+				return fmt.Errorf("failed to write commit message: %w", err)
+			}
+			defer os.Remove(tmpFile)
+
+			// Stage all changes
+			if err := utils.GitClient.StageAll(); err != nil {
+				return fmt.Errorf("failed to stage changes: %w", err)
+			}
+
+			// Create commit using the temporary file
+			if err := utils.GitClient.CommitWithFile(tmpFile); err != nil {
+				return fmt.Errorf("failed to create commit: %w", err)
+			}
+
+			// Get the commit hash
+			commitHash, err := utils.GitClient.GetCurrentHead()
+			if err != nil {
+				return fmt.Errorf("failed to get commit hash: %w", err)
+			}
+
+			// Display success message
+			fmt.Fprintf(cmd.OutOrStdout(), "\nCommit created successfully!\n\n")
+			fmt.Fprintf(cmd.OutOrStdout(), "Details:\n")
+			fmt.Fprintf(cmd.OutOrStdout(), "  Hash: %s\n", commitHash)
+			fmt.Fprintf(cmd.OutOrStdout(), "  Message:\n%s\n", commitMsg)
+
+			return nil
+		}
 
 		// Validate commit type with better error message
 		if err := validateCommitType(commitType); err != nil {
@@ -287,12 +363,19 @@ func init() {
 	commitCreateCmd.Flags().String("body", "", "Detailed description of the change")
 	commitCreateCmd.Flags().Bool("breaking", false, "Mark as a breaking change")
 	commitCreateCmd.Flags().Bool("jira", false, "Include Jira story URL in commit body")
+	commitCreateCmd.Flags().Bool("auto", false, "Automatically generate commit message from changes")
 
-	// Mark required flags
-	requiredFlags := []string{"type", "message"}
-	for _, flag := range requiredFlags {
-		if err := commitCreateCmd.MarkFlagRequired(flag); err != nil {
-			panic(fmt.Sprintf("failed to mark %s flag as required: %v", flag, err))
+	// Mark required flags only if auto is not set
+	commitCreateCmd.PreRunE = func(cmd *cobra.Command, args []string) error {
+		auto, _ := cmd.Flags().GetBool("auto")
+		if !auto {
+			requiredFlags := []string{"type", "message"}
+			for _, flag := range requiredFlags {
+				if err := cmd.MarkFlagRequired(flag); err != nil {
+					return fmt.Errorf("failed to mark %s flag as required: %v", flag, err)
+				}
+			}
 		}
+		return nil
 	}
 }
