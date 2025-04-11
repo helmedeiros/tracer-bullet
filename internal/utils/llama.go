@@ -25,288 +25,265 @@ func SetLlamaAPIURL(urlStr string) error {
 
 // GenerateCommitMessage uses llama to generate a commit message from the provided diffs
 func GenerateCommitMessage(diffs []string) (string, error) {
-	// Prepare the prompt for llama
-	prompt := `You are an expert at writing clear and descriptive commit messages following the conventional commit format.
-Please analyze the following code changes and generate a commit message that clearly explains what changed and why.
+	prompt := buildPrompt(diffs)
+	return callLlamaAPI(prompt)
+}
 
-IMPORTANT INSTRUCTIONS:
-1. DO NOT include any conversational messages, questions, or closing remarks
-2. DO NOT ask for feedback or confirmation
-3. ONLY provide the commit message in the exact format specified below
-4. DO NOT add any additional text outside the commit message format
-5. CAREFULLY analyze the actual code changes in the diff
-6. Focus on the specific changes made to the code, not general improvements
-7. Be precise about what was added, removed, or modified
-8. DO NOT make assumptions about code functionality not shown in the diff
-9. ONLY describe changes that are visible in the provided code diff
-10. DO NOT describe changes that are not in the diff
-11. DO NOT make up function names or variables that are not in the code
-12. ONLY reference code that is actually shown in the changes
+func buildPrompt(diffs []string) string {
+	prompt := getBasePrompt()
+	prompt += "\nCHANGES TO ANALYZE:\n\n"
 
+	fileChanges := groupChangesByFile(diffs)
+	prompt += formatFileChanges(fileChanges)
+	prompt += formatChangeSummary(fileChanges)
+
+	return prompt
+}
+
+func getBasePrompt() string {
+	return `You are an expert at writing clear and descriptive commit messages.
 The commit message MUST follow this exact format:
 <type>(<scope>): <description>
 
-<blank line>
-<body>
+- type: feat, fix, docs, style, refactor, test, or chore
+- scope: optional component name in parentheses
+- description: start with verb, use imperative mood, no period
 
-Where:
-- type: One of these exactly:
-  * feat: A new feature
-  * fix: A bug fix
-  * docs: Documentation changes
-  * style: Code style changes (formatting, etc.)
-  * refactor: Code refactoring (no functional changes)
-  * test: Adding or modifying tests
-  * chore: Maintenance tasks, build process, etc.
-
-- scope: REQUIRED. What part of the codebase is affected (e.g., api, core, ui, tests)
-  * Look at the file paths in the changes to determine the scope
-  * If changes affect multiple scopes, use the most relevant one
-  * Be specific about which part of the codebase was changed
-  * The scope should match the directory structure in the diff
-  * DO NOT make up scopes that aren't in the code
-
-- description: A clear, concise summary of the change in present tense, imperative mood
-  * Good: "add user authentication"
-  * Bad: "added user authentication" or "adding user authentication"
-  * Must be under 50 characters
-  * Must describe the main purpose of the changes
-  * Must reflect the actual code changes in the diff
-  * Should match the visible changes in the code
-  * DO NOT describe changes that aren't in the diff
-
-- body: REQUIRED. Must include:
-  * A detailed explanation of what changed and why
-  * A bullet-point list of specific changes made
-  * Technical details that might be important
-  * Impact of the changes
-  * Any breaking changes or migration steps if applicable
-  * Each bullet point should reference specific changes from the diff
-  * Each change should be verifiable in the provided code diff
-  * DO NOT include changes that aren't in the diff
-
-IMPORTANT RULES:
-1. ALWAYS include a scope in parentheses
-2. ALWAYS include a detailed body section
-3. Use present tense, imperative mood for the description
-4. Start each bullet point with a capital letter
-5. End each bullet point with a period
-6. Keep the description under 50 characters
-7. Make the body comprehensive but concise
-8. Focus on the actual changes shown in the diff
-9. Include specific file names and line numbers when relevant
-10. DO NOT include any conversational text or questions
-11. Each bullet point must correspond to a specific change in the diff
-12. Be precise about what was added, removed, or modified
-13. DO NOT describe functionality not shown in the code changes
-14. Verify each change against the actual diff before including it
-15. DO NOT make up function names or variables
-16. ONLY reference code that is actually shown in the changes
+A blank line must separate the header from the body.
+The body should list the key changes with bullet points.
 
 Examples of good commit messages:
 
-1. Feature Addition:
-feat(utils): add summary section to prompt formatting
+feat(auth): add user authentication
 
-Add summary section to improve change analysis.
-- Add summary section to show line count changes
-- Format changes by file for better organization
-- Include addition and removal counts per file
-- Improve change visibility in the prompt
+Implement user authentication flow with secure password handling
+- Add login/logout endpoints
+- Create password hashing utilities
+- Add session management
+- Implement JWT token generation
 
-2. Bug Fix:
-fix(api): correct response parsing in user service
+fix(api): handle null pointer in user service
 
-Fix incorrect parsing of API responses in user service.
-- Update response field validation logic
-- Add proper error handling for missing fields
-- Fix type assertion for response data
-- Add test cases for error scenarios
+Update user lookup to handle missing profiles
+- Add null checks in user service
+- Improve error messages
+- Add validation for user IDs
 
-3. Refactoring:
 refactor(core): improve error handling
 
-Standardize error handling across the application.
-- Create custom error types for better error classification
-- Implement consistent error response format
-- Update error logging with structured data
-- Add documentation for error handling patterns
+Standardize error handling across core services
+- Create custom error types
+- Add error wrapping
+- Improve error messages
+- Add error logging
 
-Here are the changes to analyze:
-`
+The changes will be provided in git diff format. Generate a commit message for these changes:`
+}
 
-	// Add all diffs to the prompt with better structure
-	prompt += "\nCHANGES TO ANALYZE:\n\n"
-
-	// Group changes by file
+func groupChangesByFile(diffs []string) map[string][]string {
 	fileChanges := make(map[string][]string)
 	for _, diff := range diffs {
-		// Split diff into lines
 		lines := strings.Split(diff, "\n")
 		if len(lines) == 0 {
 			continue
 		}
 
-		// Extract file name from first line
 		fileLine := lines[0]
 		if !strings.HasPrefix(fileLine, "File: ") {
 			continue
 		}
 		fileName := strings.TrimPrefix(fileLine, "File: ")
-
-		// Store the rest of the diff for this file
 		fileChanges[fileName] = append(fileChanges[fileName], strings.Join(lines[1:], "\n"))
 	}
+	return fileChanges
+}
 
-	// Format changes for each file
+func formatFileChanges(fileChanges map[string][]string) string {
+	var prompt string
 	for fileName, changes := range fileChanges {
 		prompt += fmt.Sprintf("File: %s\n", fileName)
-		prompt += "Changes:\n"
 		for _, change := range changes {
-			// Parse the diff header (e.g., @@ -10,6 +10,7 @@)
 			lines := strings.Split(change, "\n")
 			if len(lines) > 0 && strings.HasPrefix(lines[0], "@@") {
-				// Extract line numbers
-				lineInfo := lines[0]
-				prompt += fmt.Sprintf("Lines affected: %s\n", lineInfo)
-
-				// Add the actual changes with clear labeling
-				prompt += "Actual changes in this section:\n"
+				prompt += lines[0] + "\n"
 				for _, line := range lines[1:] {
-					if strings.HasPrefix(line, "+") {
-						prompt += fmt.Sprintf("  [+] Added: %s\n", strings.TrimPrefix(line, "+"))
-					} else if strings.HasPrefix(line, "-") {
-						prompt += fmt.Sprintf("  [-] Removed: %s\n", strings.TrimPrefix(line, "-"))
-					} else {
-						prompt += fmt.Sprintf("  [ ] Context: %s\n", line)
-					}
+					prompt += line + "\n"
 				}
 			}
-			prompt += "\n"
 		}
 		prompt += "\n"
 	}
+	return prompt
+}
 
-	// Add a summary of the changes
-	prompt += "\nSUMMARY OF CHANGES:\n"
+func formatChangeSummary(fileChanges map[string][]string) string {
+	summary := "\nSUMMARY OF CHANGES:\n"
 	for fileName, changes := range fileChanges {
-		prompt += fmt.Sprintf("- In %s:\n", fileName)
+		summary += fmt.Sprintf("- In %s:\n", fileName)
 		for _, change := range changes {
-			lines := strings.Split(change, "\n")
-			if len(lines) > 0 && strings.HasPrefix(lines[0], "@@") {
-				// Count additions and removals
-				additions := 0
-				removals := 0
-				for _, line := range lines[1:] {
-					if strings.HasPrefix(line, "+") {
-						additions++
-					} else if strings.HasPrefix(line, "-") {
-						removals++
-					}
-				}
-				prompt += fmt.Sprintf("  * %d lines added, %d lines removed\n", additions, removals)
-			}
+			summary += formatChangeStats(change)
 		}
 	}
-	prompt += "\n"
+	return summary
+}
 
-	// Add explicit instructions about the changes
-	prompt += "\nIMPORTANT: When writing the commit message:\n"
-	prompt += "1. ONLY describe the changes shown above\n"
-	prompt += "2. DO NOT make up changes that aren't in the diff\n"
-	prompt += "3. DO NOT describe functionality that isn't shown in the code\n"
-	prompt += "4. Focus on the actual additions and removals shown\n"
-	prompt += "5. Be specific about what was added or removed\n"
-	prompt += "6. Reference the actual code changes shown above\n\n"
+func formatChangeStats(change string) string {
+	lines := strings.Split(change, "\n")
+	if len(lines) == 0 || !strings.HasPrefix(lines[0], "@@") {
+		return ""
+	}
 
-	// Call llama API
+	additions := 0
+	removals := 0
+	for _, line := range lines[1:] {
+		switch {
+		case strings.HasPrefix(line, "+"):
+			additions++
+		case strings.HasPrefix(line, "-"):
+			removals++
+		}
+	}
+
+	return fmt.Sprintf("  - %d lines added, %d lines removed\n", additions, removals)
+}
+
+func callLlamaAPI(prompt string) (string, error) {
+	response, err := makeAPIRequest(prompt)
+	if err != nil {
+		return "", err
+	}
+
+	message, err := extractMessageFromResponse(response)
+	if err != nil {
+		return "", err
+	}
+
+	return cleanAndFormatMessage(message)
+}
+
+func makeAPIRequest(prompt string) (map[string]interface{}, error) {
 	reqBody := map[string]interface{}{
 		"model":       "llama3",
 		"prompt":      prompt,
-		"max_tokens":  1000,
+		"max_tokens":  500,
 		"temperature": 0.7,
 		"stream":      false,
 	}
 
 	jsonBody, err := json.Marshal(reqBody)
 	if err != nil {
-		return "", fmt.Errorf("failed to marshal request body: %w", err)
+		return nil, fmt.Errorf("failed to marshal request body: %w", err)
 	}
 
-	// Validate the URL before making the request
-	_, err = url.ParseRequestURI(llamaAPIURL)
-	if err != nil {
-		return "", fmt.Errorf("invalid llama API URL: %w", err)
+	if err := validateAPIURL(); err != nil {
+		return nil, err
 	}
 
-	// Make the HTTP request to the Llama API
 	//nolint:gosec // URL is validated before making the request
 	resp, err := http.Post(llamaAPIURL, "application/json", bytes.NewBuffer(jsonBody))
 	if err != nil {
-		return "", fmt.Errorf("failed to call llama API: %w", err)
+		return nil, fmt.Errorf("failed to call llama API: %w", err)
 	}
 	defer resp.Body.Close()
 
 	if resp.StatusCode != http.StatusOK {
-		return "", fmt.Errorf("llama API returned status code %d", resp.StatusCode)
+		return nil, fmt.Errorf("llama API returned status code %d", resp.StatusCode)
 	}
 
 	var result map[string]interface{}
 	if err := json.NewDecoder(resp.Body).Decode(&result); err != nil {
-		return "", fmt.Errorf("failed to decode llama API response: %w", err)
+		return nil, fmt.Errorf("failed to decode llama API response: %w", err)
 	}
 
 	// Debug: Print the full response
 	fmt.Printf("Llama API Response: %+v\n", result)
 
-	// Try different response field names
-	var message string
-	if response, ok := result["response"].(string); ok {
-		message = response
-	} else if response, ok := result["text"].(string); ok {
-		message = response
-	} else if response, ok := result["content"].(string); ok {
-		message = response
-	} else {
-		return "", fmt.Errorf("no valid response field found in llama API response")
+	return result, nil
+}
+
+func validateAPIURL() error {
+	_, err := url.ParseRequestURI(llamaAPIURL)
+	if err != nil {
+		return fmt.Errorf("invalid llama API URL: %w", err)
 	}
+	return nil
+}
 
-	// Clean up the response
-	message = strings.TrimSpace(message)
+func extractMessageFromResponse(result map[string]interface{}) (string, error) {
+	responseFields := []string{"response", "text", "content"}
 
-	// Remove any conversational or closing messages
-	lines := strings.Split(message, "\n")
-	var cleanedLines []string
-	for _, line := range lines {
-		// Skip lines that look like conversational messages
-		if strings.HasPrefix(strings.ToLower(line), "let me know") ||
-			strings.HasPrefix(strings.ToLower(line), "i hope this") ||
-			strings.HasPrefix(strings.ToLower(line), "please let me") ||
-			strings.HasPrefix(strings.ToLower(line), "if you have any") ||
-			strings.HasPrefix(strings.ToLower(line), "feel free to") ||
-			strings.HasPrefix(strings.ToLower(line), "is there anything") ||
-			strings.HasPrefix(strings.ToLower(line), "would you like") ||
-			strings.HasPrefix(strings.ToLower(line), "do you need") {
-			continue
+	for _, field := range responseFields {
+		if response, ok := result[field].(string); ok {
+			return strings.TrimSpace(response), nil
 		}
-		cleanedLines = append(cleanedLines, line)
 	}
+
+	return "", fmt.Errorf("missing response field in llama API response")
+}
+
+func cleanAndFormatMessage(message string) (string, error) {
+	lines := strings.Split(message, "\n")
+	cleanedLines := filterConversationalLines(lines)
 
 	if len(cleanedLines) == 0 {
 		return "", fmt.Errorf("empty response after cleaning conversational messages")
 	}
 
-	// Ensure the first line follows conventional commit format
-	firstLine := cleanedLines[0]
+	return formatCommitMessage(cleanedLines), nil
+}
+
+func filterConversationalLines(lines []string) []string {
+	conversationalPrefixes := []string{
+		"let me know",
+		"i hope this",
+		"please let me",
+		"if you have any",
+		"feel free to",
+		"is there anything",
+		"would you like",
+		"do you need",
+	}
+
+	var cleanedLines []string
+	for _, line := range lines {
+		if !hasConversationalPrefix(line, conversationalPrefixes) {
+			cleanedLines = append(cleanedLines, line)
+		}
+	}
+	return cleanedLines
+}
+
+func hasConversationalPrefix(line string, prefixes []string) bool {
+	lowercaseLine := strings.ToLower(line)
+	for _, prefix := range prefixes {
+		if strings.HasPrefix(lowercaseLine, prefix) {
+			return true
+		}
+	}
+	return false
+}
+
+func formatCommitMessage(lines []string) string {
+	firstLine := lines[0]
 	if !strings.Contains(firstLine, ":") {
 		firstLine = "feat: " + firstLine
 	}
 
-	// Reconstruct the message with proper formatting
-	message = firstLine
-	if len(cleanedLines) > 1 {
-		message += "\n\n" + strings.Join(cleanedLines[1:], "\n")
+	if len(lines) == 1 {
+		return firstLine
 	}
 
-	return message, nil
+	// Remove any extra blank lines between header and body
+	var bodyLines []string
+	foundNonEmpty := false
+	for _, line := range lines[1:] {
+		if strings.TrimSpace(line) != "" {
+			foundNonEmpty = true
+			bodyLines = append(bodyLines, line)
+		} else if foundNonEmpty {
+			bodyLines = append(bodyLines, line)
+		}
+	}
+
+	return firstLine + "\n\n" + strings.Join(bodyLines, "\n")
 }
