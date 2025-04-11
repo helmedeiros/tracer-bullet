@@ -178,6 +178,29 @@ Here are the changes to analyze:
 		prompt += "\n"
 	}
 
+	// Add a summary of the changes
+	prompt += "\nSUMMARY OF CHANGES:\n"
+	for fileName, changes := range fileChanges {
+		prompt += fmt.Sprintf("- In %s:\n", fileName)
+		for _, change := range changes {
+			lines := strings.Split(change, "\n")
+			if len(lines) > 0 && strings.HasPrefix(lines[0], "@@") {
+				// Count additions and removals
+				additions := 0
+				removals := 0
+				for _, line := range lines[1:] {
+					if strings.HasPrefix(line, "+") {
+						additions++
+					} else if strings.HasPrefix(line, "-") {
+						removals++
+					}
+				}
+				prompt += fmt.Sprintf("  * %d lines added, %d lines removed\n", additions, removals)
+			}
+		}
+	}
+	prompt += "\n"
+
 	// Call llama API
 	reqBody := map[string]interface{}{
 		"model":       "llama3",
