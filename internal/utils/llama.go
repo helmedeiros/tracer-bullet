@@ -170,14 +170,15 @@ Here are the changes to analyze:
 				lineInfo := lines[0]
 				prompt += fmt.Sprintf("Lines affected: %s\n", lineInfo)
 
-				// Add the actual changes
+				// Add the actual changes with clear labeling
+				prompt += "Actual changes in this section:\n"
 				for _, line := range lines[1:] {
 					if strings.HasPrefix(line, "+") {
-						prompt += fmt.Sprintf("Added: %s\n", strings.TrimPrefix(line, "+"))
+						prompt += fmt.Sprintf("  [+] Added: %s\n", strings.TrimPrefix(line, "+"))
 					} else if strings.HasPrefix(line, "-") {
-						prompt += fmt.Sprintf("Removed: %s\n", strings.TrimPrefix(line, "-"))
+						prompt += fmt.Sprintf("  [-] Removed: %s\n", strings.TrimPrefix(line, "-"))
 					} else {
-						prompt += fmt.Sprintf("Context: %s\n", line)
+						prompt += fmt.Sprintf("  [ ] Context: %s\n", line)
 					}
 				}
 			}
@@ -208,6 +209,15 @@ Here are the changes to analyze:
 		}
 	}
 	prompt += "\n"
+
+	// Add explicit instructions about the changes
+	prompt += "\nIMPORTANT: When writing the commit message:\n"
+	prompt += "1. ONLY describe the changes shown above\n"
+	prompt += "2. DO NOT make up changes that aren't in the diff\n"
+	prompt += "3. DO NOT describe functionality that isn't shown in the code\n"
+	prompt += "4. Focus on the actual additions and removals shown\n"
+	prompt += "5. Be specific about what was added or removed\n"
+	prompt += "6. Reference the actual code changes shown above\n\n"
 
 	// Call llama API
 	reqBody := map[string]interface{}{
