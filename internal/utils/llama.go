@@ -26,10 +26,10 @@ func SetLlamaAPIURL(urlStr string) error {
 // GenerateCommitMessage uses llama to generate a commit message from the provided diffs
 func GenerateCommitMessage(diffs []string) (string, error) {
 	// Prepare the prompt for llama
-	prompt := `Please analyze the following code changes and generate a commit message following the conventional commit format.
-The first line should be the type and description, followed by a blank line and then a detailed description of the changes.
+	prompt := `You are an expert at writing clear and descriptive commit messages following the conventional commit format.
+Please analyze the following code changes and generate a commit message that clearly explains what changed and why.
 
-The commit message should follow this format:
+The commit message MUST follow this exact format:
 <type>(<scope>): <description>
 
 <blank line>
@@ -37,10 +37,52 @@ The commit message should follow this format:
 <body>
 
 Where:
-- type: feat, fix, docs, style, refactor, test, chore
-- scope: optional, what part of the codebase is affected
-- description: short description of the change
-- body: detailed description of what and why the change was made
+- type: One of these exactly:
+  * feat: A new feature
+  * fix: A bug fix
+  * docs: Documentation changes
+  * style: Code style changes (formatting, etc.)
+  * refactor: Code refactoring (no functional changes)
+  * test: Adding or modifying tests
+  * chore: Maintenance tasks, build process, etc.
+
+- scope: Optional, but recommended. What part of the codebase is affected (e.g., api, core, ui, tests)
+
+- description: A clear, concise summary of the change in present tense, imperative mood
+  * Good: "add user authentication"
+  * Bad: "added user authentication" or "adding user authentication"
+
+- body: Detailed explanation of:
+  * What changed and why
+  * Any technical details that might be important
+  * Impact of the changes
+  * Any breaking changes or migration steps if applicable
+
+Examples of good commit messages:
+
+1. Simple feature:
+feat(auth): add user authentication
+
+Add JWT-based authentication system to secure API endpoints.
+- Implement JWT token generation and validation
+- Add middleware for protected routes
+- Update API documentation
+
+2. Bug fix:
+fix(api): handle null pointer in user service
+
+Prevent application crash when user data is missing.
+- Add null checks in user service methods
+- Return appropriate error responses
+- Add test cases for null scenarios
+
+3. Refactoring:
+refactor(core): improve error handling
+
+Standardize error handling across the application.
+- Create custom error types
+- Implement consistent error responses
+- Update error logging
 
 Here are the changes to analyze:
 `
