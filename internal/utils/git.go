@@ -21,6 +21,11 @@ type GitOperations interface {
 	CreateBranch(branchName string) error
 	SwitchBranch(branchName string) error
 	BranchExists(branchName string) (bool, error)
+	GetUnstagedFiles() ([]string, error)
+	GetUntrackedFiles() ([]string, error)
+	GetDiff(file string) (string, error)
+	StageAll() error
+	CommitWithFile(file string) error
 }
 
 // RealGit implements GitOperations using actual git commands
@@ -33,18 +38,23 @@ func NewRealGit() GitOperations {
 
 // BaseMockGit provides default implementations for all GitOperations methods
 type BaseMockGit struct {
-	InitFunc            func() error
-	SetConfigFunc       func(key, value string) error
-	GetConfigFunc       func(key string) (string, error)
-	ParseRevisionFunc   func(rev string) (string, error)
-	CommitFunc          func(message string) error
-	GetCurrentHeadFunc  func() (string, error)
-	GetAuthorFunc       func() (string, error)
-	GetChangedFilesFunc func() ([]string, error)
-	GetGitRootFunc      func() (string, error)
-	CreateBranchFunc    func(branchName string) error
-	SwitchBranchFunc    func(branchName string) error
-	BranchExistsFunc    func(branchName string) (bool, error)
+	InitFunc              func() error
+	SetConfigFunc         func(key, value string) error
+	GetConfigFunc         func(key string) (string, error)
+	ParseRevisionFunc     func(rev string) (string, error)
+	CommitFunc            func(message string) error
+	GetCurrentHeadFunc    func() (string, error)
+	GetAuthorFunc         func() (string, error)
+	GetChangedFilesFunc   func() ([]string, error)
+	GetGitRootFunc        func() (string, error)
+	CreateBranchFunc      func(branchName string) error
+	SwitchBranchFunc      func(branchName string) error
+	BranchExistsFunc      func(branchName string) (bool, error)
+	GetUnstagedFilesFunc  func() ([]string, error)
+	GetUntrackedFilesFunc func() ([]string, error)
+	GetDiffFunc           func(file string) (string, error)
+	StageAllFunc          func() error
+	CommitWithFileFunc    func(file string) error
 }
 
 // NewBaseMockGit creates a new BaseMockGit with default implementations
@@ -85,6 +95,21 @@ func NewBaseMockGit() *BaseMockGit {
 		},
 		BranchExistsFunc: func(branchName string) (bool, error) {
 			return false, nil
+		},
+		GetUnstagedFilesFunc: func() ([]string, error) {
+			return nil, nil
+		},
+		GetUntrackedFilesFunc: func() ([]string, error) {
+			return nil, nil
+		},
+		GetDiffFunc: func(file string) (string, error) {
+			return "", nil
+		},
+		StageAllFunc: func() error {
+			return nil
+		},
+		CommitWithFileFunc: func(file string) error {
+			return nil
 		},
 	}
 }
@@ -224,6 +249,47 @@ func (g *RealGit) BranchExists(branchName string) (bool, error) {
 	return true, nil
 }
 
+// GetUnstagedFiles gets a list of unstaged files
+func (g *RealGit) GetUnstagedFiles() ([]string, error) {
+	output, err := RunCommand("git", "diff", "--name-only")
+	if err != nil {
+		return nil, err
+	}
+	if output == "" {
+		return nil, nil
+	}
+	return strings.Split(strings.TrimSpace(output), "\n"), nil
+}
+
+// GetUntrackedFiles gets a list of untracked files
+func (g *RealGit) GetUntrackedFiles() ([]string, error) {
+	output, err := RunCommand("git", "ls-files", "--others", "--exclude-standard")
+	if err != nil {
+		return nil, err
+	}
+	if output == "" {
+		return nil, nil
+	}
+	return strings.Split(strings.TrimSpace(output), "\n"), nil
+}
+
+// GetDiff gets the diff for a specific file
+func (g *RealGit) GetDiff(file string) (string, error) {
+	return RunCommand("git", "diff", file)
+}
+
+// StageAll stages all changes
+func (g *RealGit) StageAll() error {
+	_, err := RunCommand("git", "add", ".")
+	return err
+}
+
+// CommitWithFile creates a commit using a file for the message
+func (g *RealGit) CommitWithFile(file string) error {
+	_, err := RunCommand("git", "commit", "-F", file)
+	return err
+}
+
 // Init initializes a git repository (mock implementation)
 func (g *MockGit) Init() error {
 	return g.InitFunc()
@@ -282,6 +348,31 @@ func (g *MockGit) SwitchBranch(branchName string) error {
 // BranchExists checks if a branch exists (mock implementation)
 func (g *MockGit) BranchExists(branchName string) (bool, error) {
 	return g.BranchExistsFunc(branchName)
+}
+
+// GetUnstagedFiles gets a list of unstaged files (mock implementation)
+func (g *MockGit) GetUnstagedFiles() ([]string, error) {
+	return g.GetUnstagedFilesFunc()
+}
+
+// GetUntrackedFiles gets a list of untracked files (mock implementation)
+func (g *MockGit) GetUntrackedFiles() ([]string, error) {
+	return g.GetUntrackedFilesFunc()
+}
+
+// GetDiff gets the diff for a specific file (mock implementation)
+func (g *MockGit) GetDiff(file string) (string, error) {
+	return g.GetDiffFunc(file)
+}
+
+// StageAll stages all changes (mock implementation)
+func (g *MockGit) StageAll() error {
+	return g.StageAllFunc()
+}
+
+// CommitWithFile creates a commit using a file for the message (mock implementation)
+func (g *MockGit) CommitWithFile(file string) error {
+	return g.CommitWithFileFunc(file)
 }
 
 // splitLines splits a string into lines and trims whitespace
