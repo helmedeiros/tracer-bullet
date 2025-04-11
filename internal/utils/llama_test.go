@@ -25,7 +25,7 @@ func TestGenerateCommitMessage(t *testing.T) {
 		// Verify request body
 		assert.Equal(t, float64(500), reqBody["max_tokens"])
 		assert.Equal(t, float64(0.7), reqBody["temperature"])
-		assert.Contains(t, reqBody["prompt"], "Please analyze the following code changes")
+		assert.Contains(t, reqBody["prompt"], "You are an expert at writing clear and descriptive commit messages")
 
 		// Send response
 		response := map[string]interface{}{
