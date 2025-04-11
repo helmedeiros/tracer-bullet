@@ -33,7 +33,6 @@ The commit message MUST follow this exact format:
 <type>(<scope>): <description>
 
 <blank line>
-
 <body>
 
 Where:
@@ -46,43 +45,56 @@ Where:
   * test: Adding or modifying tests
   * chore: Maintenance tasks, build process, etc.
 
-- scope: Optional, but recommended. What part of the codebase is affected (e.g., api, core, ui, tests)
+- scope: REQUIRED. What part of the codebase is affected (e.g., api, core, ui, tests)
 
 - description: A clear, concise summary of the change in present tense, imperative mood
   * Good: "add user authentication"
   * Bad: "added user authentication" or "adding user authentication"
 
-- body: Detailed explanation of:
-  * What changed and why
-  * Any technical details that might be important
+- body: REQUIRED. Must include:
+  * A detailed explanation of what changed and why
+  * A bullet-point list of specific changes made
+  * Technical details that might be important
   * Impact of the changes
   * Any breaking changes or migration steps if applicable
 
+IMPORTANT RULES:
+1. ALWAYS include a scope in parentheses
+2. ALWAYS include a detailed body section
+3. Use present tense, imperative mood for the description
+4. Start each bullet point with a capital letter
+5. End each bullet point with a period
+6. Keep the description under 50 characters
+7. Make the body comprehensive but concise
+
 Examples of good commit messages:
 
-1. Simple feature:
-feat(auth): add user authentication
+1. Feature Addition:
+feat(auth): implement JWT authentication
 
 Add JWT-based authentication system to secure API endpoints.
 - Implement JWT token generation and validation
 - Add middleware for protected routes
-- Update API documentation
+- Update API documentation with authentication details
+- Add test coverage for authentication flow
 
-2. Bug fix:
+2. Bug Fix:
 fix(api): handle null pointer in user service
 
 Prevent application crash when user data is missing.
 - Add null checks in user service methods
 - Return appropriate error responses
 - Add test cases for null scenarios
+- Update error logging to include context
 
 3. Refactoring:
 refactor(core): improve error handling
 
 Standardize error handling across the application.
-- Create custom error types
-- Implement consistent error responses
-- Update error logging
+- Create custom error types for better error classification
+- Implement consistent error response format
+- Update error logging with structured data
+- Add documentation for error handling patterns
 
 Here are the changes to analyze:
 `
