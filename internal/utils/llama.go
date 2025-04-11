@@ -39,6 +39,9 @@ IMPORTANT INSTRUCTIONS:
 7. Be precise about what was added, removed, or modified
 8. DO NOT make assumptions about code functionality not shown in the diff
 9. ONLY describe changes that are visible in the provided code diff
+10. DO NOT describe changes that are not in the diff
+11. DO NOT make up function names or variables that are not in the code
+12. ONLY reference code that is actually shown in the changes
 
 The commit message MUST follow this exact format:
 <type>(<scope>): <description>
@@ -61,6 +64,7 @@ Where:
   * If changes affect multiple scopes, use the most relevant one
   * Be specific about which part of the codebase was changed
   * The scope should match the directory structure in the diff
+  * DO NOT make up scopes that aren't in the code
 
 - description: A clear, concise summary of the change in present tense, imperative mood
   * Good: "add user authentication"
@@ -69,6 +73,7 @@ Where:
   * Must describe the main purpose of the changes
   * Must reflect the actual code changes in the diff
   * Should match the visible changes in the code
+  * DO NOT describe changes that aren't in the diff
 
 - body: REQUIRED. Must include:
   * A detailed explanation of what changed and why
@@ -78,6 +83,7 @@ Where:
   * Any breaking changes or migration steps if applicable
   * Each bullet point should reference specific changes from the diff
   * Each change should be verifiable in the provided code diff
+  * DO NOT include changes that aren't in the diff
 
 IMPORTANT RULES:
 1. ALWAYS include a scope in parentheses
@@ -94,17 +100,19 @@ IMPORTANT RULES:
 12. Be precise about what was added, removed, or modified
 13. DO NOT describe functionality not shown in the code changes
 14. Verify each change against the actual diff before including it
+15. DO NOT make up function names or variables
+16. ONLY reference code that is actually shown in the changes
 
 Examples of good commit messages:
 
 1. Feature Addition:
-feat(utils): enhance commit message generation
+feat(utils): add summary section to prompt formatting
 
-Improve commit message generation with better prompt handling.
-- Add explicit instructions to prevent conversational messages
-- Update prompt format with clearer structure
-- Add specific rules for message formatting
-- Include examples of proper commit messages
+Add summary section to improve change analysis.
+- Add summary section to show line count changes
+- Format changes by file for better organization
+- Include addition and removal counts per file
+- Improve change visibility in the prompt
 
 2. Bug Fix:
 fix(api): correct response parsing in user service
