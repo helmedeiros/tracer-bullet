@@ -29,7 +29,11 @@ func GenerateCommitMessage(diffs []string) (string, error) {
 	prompt := `You are an expert at writing clear and descriptive commit messages following the conventional commit format.
 Please analyze the following code changes and generate a commit message that clearly explains what changed and why.
 
-IMPORTANT: You MUST analyze the actual code changes provided below and generate a message that specifically describes those changes.
+IMPORTANT INSTRUCTIONS:
+1. DO NOT include any conversational messages, questions, or closing remarks
+2. DO NOT ask for feedback or confirmation
+3. ONLY provide the commit message in the exact format specified below
+4. DO NOT add any additional text outside the commit message format
 
 The commit message MUST follow this exact format:
 <type>(<scope>): <description>
@@ -74,6 +78,7 @@ IMPORTANT RULES:
 7. Make the body comprehensive but concise
 8. Focus on the actual changes shown in the diff
 9. Include specific file names and line numbers when relevant
+10. DO NOT include any conversational text or questions
 
 Examples of good commit messages:
 
