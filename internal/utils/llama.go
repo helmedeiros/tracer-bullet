@@ -29,6 +29,8 @@ func GenerateCommitMessage(diffs []string) (string, error) {
 	prompt := `You are an expert at writing clear and descriptive commit messages following the conventional commit format.
 Please analyze the following code changes and generate a commit message that clearly explains what changed and why.
 
+IMPORTANT: You MUST analyze the actual code changes provided below and generate a message that specifically describes those changes.
+
 The commit message MUST follow this exact format:
 <type>(<scope>): <description>
 
@@ -46,10 +48,14 @@ Where:
   * chore: Maintenance tasks, build process, etc.
 
 - scope: REQUIRED. What part of the codebase is affected (e.g., api, core, ui, tests)
+  * Look at the file paths in the changes to determine the scope
+  * If changes affect multiple scopes, use the most relevant one
 
 - description: A clear, concise summary of the change in present tense, imperative mood
   * Good: "add user authentication"
   * Bad: "added user authentication" or "adding user authentication"
+  * Must be under 50 characters
+  * Must describe the main purpose of the changes
 
 - body: REQUIRED. Must include:
   * A detailed explanation of what changed and why
@@ -66,6 +72,8 @@ IMPORTANT RULES:
 5. End each bullet point with a period
 6. Keep the description under 50 characters
 7. Make the body comprehensive but concise
+8. Focus on the actual changes shown in the diff
+9. Include specific file names and line numbers when relevant
 
 Examples of good commit messages:
 
@@ -140,25 +148,40 @@ Here are the changes to analyze:
 		return "", fmt.Errorf("failed to decode llama API response: %w", err)
 	}
 
-	// Check if response field exists
-	response, ok := result["response"]
-	if !ok {
-		return "", fmt.Errorf("missing response field in llama API response")
-	}
+	// Debug: Print the full response
+	fmt.Printf("Llama API Response: %+v\n", result)
 
-	// Convert response to string
-	message, ok := response.(string)
-	if !ok {
-		return "", fmt.Errorf("invalid response field type in llama API response")
+	// Try different response field names
+	var message string
+	if response, ok := result["response"].(string); ok {
+		message = response
+	} else if response, ok := result["text"].(string); ok {
+		message = response
+	} else if response, ok := result["content"].(string); ok {
+		message = response
+	} else {
+		return "", fmt.Errorf("no valid response field found in llama API response")
 	}
 
 	// Clean up the response
 	message = strings.TrimSpace(message)
 
-	// Ensure the message follows conventional commit format
-	if !strings.Contains(message, ":") {
-		// If no type is specified, default to feat
-		message = "feat: " + message
+	// Split the message into lines
+	lines := strings.Split(message, "\n")
+	if len(lines) == 0 {
+		return "", fmt.Errorf("empty response from llama API")
+	}
+
+	// Ensure the first line follows conventional commit format
+	firstLine := lines[0]
+	if !strings.Contains(firstLine, ":") {
+		firstLine = "feat: " + firstLine
+	}
+
+	// Reconstruct the message with proper formatting
+	message = firstLine
+	if len(lines) > 1 {
+		message += "\n\n" + strings.Join(lines[1:], "\n")
 	}
 
 	return message, nil
