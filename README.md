@@ -2,8 +2,6 @@
 
 A Go-based command-line tool for tracking agile project activities, including story management, commits, and pair programming sessions.
 
-![Example](.github/tracer_example.gif)
-
 ## Project Structure
 
 ```
